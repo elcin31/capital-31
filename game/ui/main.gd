@@ -66,7 +66,9 @@ func build_hud() -> void:
  var profit=UI.metric(vals,"ПРИБЫЛЬ / 30 ДН.","",Color("44e8b1"))
  var team=UI.metric(vals,"СОТРУДНИКИ","",Color.WHITE)
  var date=UI.metric(vals,"ИГРОВОЕ ВРЕМЯ","",Color.WHITE)
- for v in vals.get_children():v.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+ for v in vals.get_children():
+  v.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+  v.get_child(0).add_theme_color_override("font_color",Color("9ac2d5"))
  bind_text(cap,func():return Catalog.money(Game.ledger().accounts.cash,true))
  bind_text(rev,func():return Catalog.money(Game.ledger().report(maxi(0,Game.day()-29)).revenue,true))
  bind_text(profit,func():return Catalog.money(Game.ledger().report(maxi(0,Game.day()-29)).net,true))
@@ -91,9 +93,13 @@ func build_hud() -> void:
  camera_buttons=UI.row(game_layer)
  for item in [["−",func():world.change_zoom(0.8)],["+",func():world.change_zoom(1.25)],["⌖",func():world.center_camera()]]:
   UI.button(camera_buttons,item[0],item[1]).custom_minimum_size.x=46
- UI.button(camera_buttons,"Ⅱ",func():Game.speed=0;refresh_values())
+ var pause=UI.button(camera_buttons,"Ⅱ",func():Game.speed=0;refresh_values())
+ pause.toggle_mode=true
+ bind_value(pause,func():return Game.speed==0,"button_pressed")
  for rate in [1,2,5,10]:
-  UI.button(camera_buttons,"×%d"%rate,func():Game.speed=rate;refresh_values()).custom_minimum_size.x=48
+  var time_button=UI.button(camera_buttons,"×%d"%rate,func():Game.speed=rate;refresh_values())
+  time_button.custom_minimum_size.x=48;time_button.toggle_mode=true
+  bind_value(time_button,func():return Game.speed==rate,"button_pressed")
  floor_buttons=UI.row(game_layer)
  UI.button(floor_buttons,"⚒  Строить",business.show_build)
  UI.button(floor_buttons,"Этаж −",func():world.floor_id=maxi(0,world.floor_id-1);world.refresh())
@@ -106,13 +112,17 @@ func build_hud() -> void:
 
 func build_sidebar() -> void:
  right_panel=PanelContainer.new();game_layer.add_child(right_panel)
- var col=UI.column(right_panel);var heading=UI.row(col)
+ var col=UI.scroll(right_panel);col.add_theme_constant_override("separation",8)
+ var heading=UI.row(col)
  UI.portrait(heading,Game.state.founder.appearance,Vector2(55,65))
  var title=UI.column(heading)
- UI.label(title,Game.company().name,18,UI.TEXT,true);UI.label(title,"От идеи к большой компании",11,UI.MUTED)
+ var name_label=UI.label(title,Game.company().name,17,UI.TEXT,true)
+ name_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+ name_label.custom_minimum_size.x=125
+ UI.text(title,"От идеи к большой компании",10,UI.MUTED)
  UI.button(heading,"×",func():right_panel.hide());UI.separator(col)
  UI.label(col,"Динамика компании",16,UI.TEXT,true);UI.label(col,"● Выручка    ● Прибыль",11,UI.BLUE)
- chart=HistoryChart.new();chart.custom_minimum_size.y=145;chart.history=Game.company().history;col.add_child(chart)
+ chart=HistoryChart.new();chart.custom_minimum_size.y=115;chart.history=Game.company().history;col.add_child(chart)
  bind_text(UI.pair(col,"На счетах",""),func():return Catalog.money(Game.ledger().accounts.cash,true))
  bind_text(UI.pair(col,"Доля основателя",""),func():
   for owner in Game.company().cap_table:
@@ -150,10 +160,10 @@ func relayout() -> void:
  place(top,Rect2(safe.position,Vector2(safe.size.x,72)))
  place(left,Rect2(safe.position+Vector2(0,86),Vector2(222,570)))
  place(right_panel,Rect2(safe.position+Vector2(safe.size.x-334,86),Vector2(334,minf(598,safe.size.y-170))))
- place(bottom,Rect2(Vector2(safe.position.x+242,safe.end.y-68),Vector2(safe.size.x-484,68)))
+ place(bottom,Rect2(Vector2(safe.position.x+112,safe.end.y-68),Vector2(safe.size.x-224,68)))
  place(camera_buttons,Rect2(Vector2(safe.position.x+242,safe.end.y-124),Vector2(520,46)))
  place(floor_buttons,Rect2(safe.position+Vector2(245,86),Vector2(450,46)))
- place(news_line,Rect2(Vector2(safe.end.x-322,safe.end.y-61),Vector2(322,44)))
+ place(news_line,Rect2(Vector2(safe.end.x-322,safe.end.y-121),Vector2(322,44)))
  place(analytics_button,Rect2(Vector2(safe.end.x-145,safe.position.y+90),Vector2(145,44)))
  if is_instance_valid(modal_panel):layout_modal()
 

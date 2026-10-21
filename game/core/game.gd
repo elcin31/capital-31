@@ -9,6 +9,8 @@ var speed: int = 0
 var accumulator: float = 0.0
 var settings: Dictionary = {"sound":true,"quality":1,"fps":30}
 var last_autosave: int = -1
+var ledger_cache: Ledger
+var ledger_source: Dictionary={}
 
 func _ready() -> void:
  get_tree().auto_accept_quit=false
@@ -56,7 +58,11 @@ func company() -> Dictionary:
  return state.companies[clampi(int(state.current),0,state.companies.size()-1)]
 
 func ledger() -> Ledger:
- return Ledger.new(company().get("ledger",{}))
+ var source=company().get("ledger",{})
+ if ledger_cache==null or not is_same(source,ledger_source):
+  ledger_cache=Ledger.new(source)
+  ledger_source=source
+ return ledger_cache
 
 func day() -> int:
  return int(state.get("hour",9))/24
@@ -192,6 +198,7 @@ func hire(candidate: Dictionary) -> String:
  company().next_employee+=1
  e.task=-1; e.fatigue=0.0; e.satisfaction=80.0; e.efficiency=0.0; e.experience=0.0; e.status="Идёт в офис"; e.x=0; e.y=6; e.floor=0; e.route=[]; e.start=8; e.end=18
  company().employees.append(e)
+ state.founder.skills[0]=minf(100,state.founder.skills[0]+0.1)
  updated.emit(); office_changed.emit()
  return ""
 
@@ -255,6 +262,7 @@ func product_action(index: int, action: String, value: int = 0) -> String:
   "campaign":
    if l.accounts.cash<120000: return "Кампания стоит €1 200"
    l.expense(day(),"Продвижение: "+p.name,120000,"marketing"); p.awareness=minf(100,p.awareness+15)
+   state.founder.skills[4]=minf(100,state.founder.skills[4]+0.5)
   "update":
    if not p.stage in ["Поддержка","Рост","Спад"]: return "Сначала выпустите продукт"
    if l.accounts.cash<150000: return "Обновление стоит €1 500"
@@ -262,7 +270,8 @@ func product_action(index: int, action: String, value: int = 0) -> String:
   "supply":
    if c.industry==0: return "IT не требует товарных запасов"
    if OfficeSim.bonus(c,["shelf"])<1: return "Купите стеллаж на складе"
-   var held=int(p.stock)+int(p.materials)
+   var held=0
+   for stock_product in c.products:held+=int(stock_product.stock)+int(stock_product.materials)
    var cap=int(OfficeSim.bonus(c,["shelf"]))*100
    if held>=cap: return "Склад заполнен"
    if not Economy.procure(l,p,mini(50,cap-held),(0.50 if c.industry==1 else 0.28)*state.world.supply,day(),c.industry==2): return "Недостаточно денег на закупку"
@@ -301,8 +310,29 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
    var own: float=0
    for owner in c.cap_table:
     if owner.id=="founder": own=owner.share
+    elif str(owner.id).begins_with("company_"):
+     var parent=state.companies[int(str(owner.id).trim_prefix("company_"))]
+     var parent_ledger=Ledger.new(parent.ledger)
+     var portion=int(amount*owner.share)
+     parent_ledger.post(day(),"Внутригрупповые дивиденды",{"cash":portion,"earnings":portion},"investing",{"revenue":portion})
+     parent.ledger=parent_ledger.export_data()
    state.founder.personal+=int(amount*own)
    l.post(day(),"Дивиденды всем владельцам",{"cash":-amount,"earnings":-amount},"financing")
+  "sell_stake":
+   var own={}
+   for owner in c.cap_table:
+    if owner.id=="founder":own=owner
+   var value=int(Negotiation.valuation(c)*0.90)
+   var share=float(amount)/maxi(1,value)
+   var available=int(state.get("secondary_capital",60000000))
+   if own.is_empty() or amount<=0 or share>float(own.share)*0.5 or amount>available:return "Можно продать до половины личной доли в пределах капитала покупателя"
+   own.share-=share
+   var found=false
+   for owner in c.cap_table:
+    if owner.id=="secondary":owner.share+=share;found=true
+   if not found:c.cap_table.append({"id":"secondary","name":"Частный покупатель","share":share})
+   state.founder.personal+=amount;state.secondary_capital=available-amount
+   state.founder.career.append({"day":day(),"text":"Продано %.2f%% личной доли в %s за %s"%[share*100,c.name,Catalog.money(amount)]})
   "salary": c.founder_salary=maxi(0,amount)
   "property":
    if c.office.owned: return "Здание уже принадлежит компании"
@@ -336,6 +366,7 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
    c.status="Ликвидирована"; c.employees=[]; c.receivables=[]
    state.founder.career.append({"day":day(),"text":"Ликвидирована "+c.name})
    state.founder.skills[6]=maxf(0,state.founder.skills[6]-5)
+ state.founder.skills[1]=minf(100,state.founder.skills[1]+0.1)
  commit_ledger(l)
  return ""
 

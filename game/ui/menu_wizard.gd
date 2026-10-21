@@ -9,6 +9,7 @@ var model: int=0
 var capital_index: int=1
 var company_name: String="NOVA Technologies"
 var career_mode: bool=false
+var logo_index: int=0
 
 func _init(host: Control) -> void:ui=host
 
@@ -79,7 +80,7 @@ func show_city() -> void:
  var city=Catalog.CITIES[city_id]
  var content=UI.row(col)
  var preview=PanelContainer.new();preview.clip_contents=true;preview.custom_minimum_size=Vector2(460,265);preview.size_flags_horizontal=Control.SIZE_EXPAND_FILL;content.add_child(preview)
- var canvas=CityCanvas.new();canvas.position=Vector2(240,-95);canvas.scale=Vector2.ONE*0.43;preview.add_child(canvas);canvas.setup(city_id)
+ var canvas=CityCanvas.new();canvas.position=Vector2(230,50);canvas.scale=Vector2.ONE*0.24;preview.add_child(canvas);canvas.setup(city_id)
  var info=UI.column(content)
  UI.label(info,city.name+" · "+city.country,24,UI.TEXT,true)
  UI.pair(info,"Аренда / месяц",Catalog.money(city.rent))
@@ -99,7 +100,7 @@ func show_company() -> void:
  UI.field(col,"Название компании",company_name,func(s):company_name=s)
  UI.option(col,"Отрасль",Catalog.INDUSTRIES,industry,func(n):industry=n;model=0;show_company())
  UI.option(col,"Направление и бизнес-модель",Catalog.MODELS[industry],model,func(n):model=n)
- UI.option(col,"Логотип",["▥ Стеклянная башня","◈ Геометрия роста","◎ Новые горизонты"],industry)
+ UI.option(col,"Логотип",["▥ Стеклянная башня","◈ Геометрия роста","◎ Новые горизонты"],logo_index,func(n):logo_index=n)
  UI.option(col,"Вклад из личных средств",["€40 000 · осторожный старт","€80 000 · сбалансированный старт","€140 000 · быстрый рост"],capital_index,func(n):capital_index=n)
  UI.pair(col,"Штаб-квартира",Catalog.CITIES[city_id].name)
  UI.text(col,["IT: разработка → тестирование → запуск → подписки и поддержка. Нужны разработчики и компьютеры.","Розница: торговый зал и касса → закупка товаров → склад → продажи. Следите за запасами.","Производство: цех и линия → закупка сырья → сборка → контроль качества → отгрузка."][industry],17,UI.TEXT)
@@ -114,6 +115,7 @@ func finish() -> void:
   var error=Game.register_company(city_id,company_name,industry,capital,model)
   if not error.is_empty():ui.show_toast(error,"warning");return
  else:Game.start_game(founder,city_id,company_name,industry,capital,model)
+ Game.company().logo=logo_index
  ui.audio.play_cue("level");ui.enter_game()
 
 func save_frame(name: String) -> void:

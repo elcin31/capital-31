@@ -1,0 +1,29 @@
+{
+  "checks": 99,
+  "failed": 0,
+  "failures": [],
+  "godot": "4.6.3-stable (official)",
+  "industry_evidence": [
+    {
+      "balance_error": 0,
+      "cash": 11476830,
+      "customers": 287,
+      "industry": 0,
+      "revenue": 815191
+    },
+    {
+      "balance_error": 0,
+      "cash": 10858672,
+      "customers": 224,
+      "industry": 1,
+      "revenue": 1097600
+    },
+    {
+      "balance_error": 0,
+      "cash": 10822211,
+      "customers": 233,
+      "industry": 2,
+      "revenue": 1141700
+    }
+  ]
+}

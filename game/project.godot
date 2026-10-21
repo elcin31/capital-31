@@ -23,12 +23,13 @@ window/dpi/allow_hidpi=true
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
 textures/default_filters/use_nearest_mipmap_filter=false
 environment/defaults/default_clear_color=Color(0.90,0.95,1,1)
 renderer/rendering_method.web="gl_compatibility"
 
 [input_devices]
-pointing/emulate_touch_from_mouse=true
+pointing/emulate_touch_from_mouse=false
 pointing/emulate_mouse_from_touch=true
 
 [audio]

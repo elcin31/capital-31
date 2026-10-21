@@ -2,11 +2,20 @@ class_name CityCanvas
 extends Node2D
 
 var city_id: int = 0
+var texture: Texture2D
+var illustrated: bool=false
 var buildings: Array = []
 var font: Font = preload("res://assets/fonts/DejaVuSans-Bold.ttf")
 
 func setup(id: int) -> void:
  city_id=id
+ var asset="res://assets/"+PaintedCity.FILES[id]+".png"
+ illustrated=ResourceLoader.exists(asset)
+ if illustrated:
+  texture=load(asset)
+  buildings=PaintedCity.objects(id)
+  queue_redraw()
+  return
  buildings=[]
  var rng=RandomNumberGenerator.new()
  rng.seed=310031+id*13571
@@ -26,6 +35,9 @@ func setup(id: int) -> void:
  queue_redraw()
 
 func _draw() -> void:
+ if illustrated:
+  PaintedCity.background(self,texture)
+  return
  var sand=city_id==2
  Art.tile(self,-8,-8,Color("e8e5cf") if sand else Color("c2e5d1"),52,52)
  Art.box(self,-0.5,-0.5,36.5,36.5,12,Color("a3c8c8"),-12)

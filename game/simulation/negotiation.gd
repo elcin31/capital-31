@@ -10,7 +10,7 @@ static func valuation(c: Dictionary) -> int:
 
 static func start(state: Dictionary, c: Dictionary, investor_id: int, amount: int) -> Dictionary:
  var inv=Catalog.INVESTORS[investor_id]
- var memory=state.investor_memory.get(str(investor_id),{"trust":50.0,"meetings":0,"deals":0,"refused":0})
+ var memory=state.investor_memory.get(str(investor_id),{"trust":50.0,"meetings":0,"deals":0,"refused":0,"invested":0})
  state.investor_memory[str(investor_id)]=memory
  memory.meetings+=1
  var l=Ledger.new(c.ledger)
@@ -20,9 +20,12 @@ static func start(state: Dictionary, c: Dictionary, investor_id: int, amount: in
  var interest=25.0+inv.risk*18.0+(20.0 if inv.industry==c.industry else -8.0)+quality*0.12+state.founder.skills[6]*0.12+(memory.trust-50)*0.2
  interest+=clampf(float(r.revenue)/150000.0,0,15)+clampf(float(r.net)/300000.0,-15,10)-minf(20,float(l.accounts.debt)/2000000)
  var value=valuation(c)
- var offered=clampi(amount,1000000,int(inv.capital*0.35))
+ var remaining=maxi(0,int(inv.capital)-int(memory.get("invested",0)))
+ var offered=mini(remaining,clampi(amount,1000000,int(inv.capital*0.35)))
  var share=clampf(float(offered)/(value+offered)*(1.0+inv["return"]),0.05,0.65)
- var n={"investor":investor_id,"amount":offered,"share":share,"pre_money":int(offered*(1-share)/share),"interest":clampf(interest,0,100),"patience":int(inv.patience),"stage":"pitch","used":[],"dialogue":"Расскажите о бизнесе. Почему сейчас подходящий момент для инвестиций?","closed":false,"accepted":false}
+ if OfficeSim.has_room(c,"meeting") and OfficeSim.bonus(c,["table"])>0:interest+=5
+ var n={"investor":investor_id,"amount":offered,"share":share,"pre_money":int(offered*(1-share)/share),"interest":clampf(interest,0,100),"patience":int(inv.patience),"stage":"pitch","used":[],"dialogue":"Расскажите о бизнесе. Почему сейчас подходящий момент для инвестиций?","closed":offered<=0 or c.status=="Ликвидирована","accepted":false}
+ if offered<=0:n.dialogue="Мой инвестиционный капитал сейчас полностью размещён."
  c.negotiation=n
  return n
 
@@ -51,6 +54,7 @@ static func respond(state: Dictionary, c: Dictionary, action: String) -> String:
   c.ledger=l.export_data()
   c.rounds.append({"day":int(state.hour)/24,"investor":inv.name,"amount":n.amount,"share":share,"pre":int(n.amount*(1.0-share)/share),"post":int(n.amount/share)})
   mem.deals+=1; mem.trust=minf(100,mem.trust+8)
+  mem.invested=int(mem.get("invested",0))+int(n.amount)
   n.closed=true; n.accepted=true; n.dialogue="Сделка заключена. Средства поступили на счёт компании. За работу!"
   state.founder.skills[2]=minf(100,state.founder.skills[2]+2)
   return "Инвестиции получены"
@@ -78,7 +82,7 @@ static func respond(state: Dictionary, c: Dictionary, action: String) -> String:
    else:
     n.interest-=12; n.dialogue="Текущие риски не позволяют снизить долю."
   "more":
-   if n.interest>60 and n.amount*1.25<inv.capital*0.4:
+   if n.interest>60 and n.amount*1.25<minf(inv.capital*0.4,inv.capital-int(mem.get("invested",0))):
     n.amount=int(n.amount*1.25); n.share=minf(0.70,n.share+0.035); n.interest-=5
     n.dialogue="Готов увеличить сумму, но потребуется большая доля."
    else: n.interest-=10; n.dialogue="Большая сумма сейчас не оправдана."

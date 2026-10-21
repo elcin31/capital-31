@@ -5,6 +5,7 @@ const ASSETS = ["cash","ar","inventory","equipment","depreciation","investments"
 const CLAIMS = ["ap","debt","tax_payable","capital","earnings"]
 var accounts: Dictionary = {}
 var journal: Array = []
+var report_cache: Dictionary={}
 
 func _init(data: Dictionary = {}) -> void:
  for key in ASSETS + CLAIMS: accounts[key] = int(data.get("accounts",{}).get(key,0))
@@ -23,6 +24,7 @@ func post(day: int, memo: String, changes: Dictionary, flow: String = "operating
   push_error("Unbalanced entry: " + memo + ": " + str(left-right))
   return false
  for k in changes: accounts[k] += int(changes[k])
+ report_cache.clear()
  journal.append({"day":day,"memo":memo,"changes":changes.duplicate(),"flow":flow,"cash":int(changes.get("cash",0)),"pl":pl.duplicate()})
  return true
 
@@ -42,6 +44,8 @@ func balance_error() -> int:
  return result
 
 func report(from_day: int = 0, to_day: int = 999999) -> Dictionary:
+ var cache_key=str(from_day)+":"+str(to_day)
+ if report_cache.has(cache_key):return report_cache[cache_key]
  var r = {"revenue":0,"cogs":0,"wages":0,"rent":0,"marketing":0,"research":0,"maintenance":0,"interest":0,"tax":0,"depreciation":0,"operating":0,"investing":0,"financing":0}
  for entry in journal:
   if entry.day < from_day or entry.day > to_day: continue
@@ -53,4 +57,5 @@ func report(from_day: int = 0, to_day: int = 999999) -> Dictionary:
  r["ebit"] = r.ebitda-r.depreciation
  r["net"] = r.ebit-r.interest-r.tax
  r["change"] = r.operating+r.investing+r.financing
+ report_cache[cache_key]=r
  return r

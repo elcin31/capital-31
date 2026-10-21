@@ -3,6 +3,8 @@ extends RefCounted
 
 const WIDTH: int = 16
 const HEIGHT: int = 12
+static var navigation_cache: Dictionary={}
+static var station_cache: Dictionary={}
 
 static func room_at(c: Dictionary, x: int, y: int, floor_id: int) -> Dictionary:
  for r in c.office.rooms:
@@ -33,6 +35,28 @@ static func can_step(c: Dictionary, a: Vector2i, b: Vector2i, floor_id: int) -> 
 
 static func path(c: Dictionary, start: Vector2i, goal: Vector2i, floor_id: int) -> Array:
  if start==goal: return [start]
+ if start==Vector2i(0,6):
+  var cache_key=JSON.stringify(c.office)+str(floor_id)
+  if not navigation_cache.has(cache_key):
+   var frontier: Array[Vector2i]=[start]
+   var parents={start:start}
+   var cursor: int=0
+   while cursor<frontier.size():
+    var cell=frontier[cursor]
+    cursor+=1
+    for direction in [Vector2i.LEFT,Vector2i.RIGHT,Vector2i.UP,Vector2i.DOWN]:
+     var next_cell=cell+direction
+     if not parents.has(next_cell) and can_step(c,cell,next_cell,floor_id):
+      parents[next_cell]=cell
+      frontier.append(next_cell)
+   if navigation_cache.size()>24:navigation_cache.clear()
+   navigation_cache[cache_key]=parents
+  var parents=navigation_cache[cache_key]
+  if not parents.has(goal):return []
+  var route: Array=[goal]
+  while route.back()!=start:route.append(parents[route.back()])
+  route.reverse()
+  return route
  var queue: Array[Vector2i] = [start]
  var visited = {start:start}
  var head: int = 0
@@ -97,6 +121,8 @@ static func count_work_objects(c: Dictionary) -> int:
  return count
 
 static func stations(c: Dictionary) -> Array:
+ var cache_key=JSON.stringify(c.office)
+ if station_cache.has(cache_key):return station_cache[cache_key]
  var out: Array = []
  for f in c.office.furniture:
   if not Catalog.FURNITURE[int(f.type)].kind in ["desk","computer","checkout","machine"]: continue
@@ -105,6 +131,8 @@ static func stations(c: Dictionary) -> Array:
    if not path(c,Vector2i(0,6),at,int(f.floor)).is_empty():
     out.append({"x":at.x,"y":at.y,"floor":f.floor,"bonus":Catalog.FURNITURE[int(f.type)].bonus,"kind":Catalog.FURNITURE[int(f.type)].kind})
     break
+ if station_cache.size()>24:station_cache.clear()
+ station_cache[cache_key]=out
  return out
 
 static func bonus(c: Dictionary, kinds: Array) -> float:

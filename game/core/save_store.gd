@@ -11,8 +11,8 @@ static func save_game(state: Dictionary, slot: int) -> String:
  if state.is_empty(): return "Нет активной игры"
  if slot < 0 or slot > 3: return "Недопустимый слот"
  DirAccess.make_dir_recursive_absolute(base_path)
- var payload = JSON.stringify(state)
- var wrapper = {"version":VERSION,"checksum":payload.sha256_text(),"payload":payload,"saved_at":Time.get_datetime_string_from_system(true)}
+ var payload = Marshalls.raw_to_base64(var_to_bytes(state))
+ var wrapper = {"version":VERSION,"encoding":"variant-v1","checksum":payload.sha256_text(),"payload":payload,"saved_at":Time.get_datetime_string_from_system(true)}
  var path = path_for(slot)
  var f = FileAccess.open(path+".tmp",FileAccess.WRITE)
  if f == null: return "Не удалось записать файл"
@@ -29,11 +29,17 @@ static func read_file(path: String) -> Dictionary:
  if not FileAccess.file_exists(path): return {}
  var f = FileAccess.open(path,FileAccess.READ)
  if f == null or f.get_length() > 64000000: return {}
- var j = JSON.parse_string(f.get_as_text())
+ var parser=JSON.new()
+ if parser.parse(f.get_as_text())!=OK:return {}
+ var j=parser.data
  if not j is Dictionary or int(j.get("version",0)) != VERSION: return {}
  var payload = j.get("payload","")
  if not payload is String or payload.sha256_text() != j.get("checksum",""): return {}
- var d = JSON.parse_string(payload)
+ var d
+ if j.get("encoding","")=="variant-v1":d=bytes_to_var(Marshalls.base64_to_raw(payload))
+ else:
+  if parser.parse(payload)!=OK:return {}
+  d=parser.data
  if not d is Dictionary or not validate(d): return {}
  return d
 

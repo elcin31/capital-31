@@ -18,6 +18,9 @@ var press_at: Vector2
 var touches: Dictionary={}
 var clock: float=0.0
 var person_positions: Dictionary={}
+var visual_routes: Dictionary={}
+var visual_targets: Dictionary={}
+var frame_delta: float=0.033
 var ghost: Vector2i=Vector2i(-100,-100)
 var tool: String=""
 var tool_type: int=0
@@ -43,6 +46,7 @@ func refresh() -> void:
  var c=Game.company()
  if last_city!=int(c.city): last_city=int(c.city); city.setup(last_city)
  office.setup(c,floor_id)
+ apply_camera()
  city.visible=mode=="city"
  office.visible=mode=="office"
  actors.queue_redraw()
@@ -52,11 +56,16 @@ func set_mode(value: String) -> void:
 
 func center_camera() -> void:
  zoom_value=1.0 if mode=="office" else 0.9
- pan=Vector2(size.x*0.45,size.y*0.26) if mode=="office" else Vector2(size.x*0.50,-90)
+ pan=Vector2(size.x*0.45,size.y*0.26) if mode=="office" else Vector2(size.x*0.42,130)
  apply_camera()
 
 func apply_camera() -> void:
  if camera_root==null:return
+ if mode=="city" and city!=null and city.illustrated:
+  var rect=PaintedCity.RECT
+  zoom_value=clampf(zoom_value,maxf(size.x/rect.size.x,size.y/rect.size.y),1.85)
+  pan.x=clampf(pan.x,size.x-rect.end.x*zoom_value,-rect.position.x*zoom_value)
+  pan.y=clampf(pan.y,size.y-rect.end.y*zoom_value,-rect.position.y*zoom_value)
  camera_root.position=pan; camera_root.scale=Vector2.ONE*zoom_value
 
 func change_zoom(factor: float, anchor: Vector2 = Vector2(-1,-1)) -> void:
@@ -68,6 +77,7 @@ func change_zoom(factor: float, anchor: Vector2 = Vector2(-1,-1)) -> void:
 
 func _process(delta: float) -> void:
  if not visible:return
+ frame_delta=delta
  if Game.settings.quality>0: clock+=delta
  if actors!=null: actors.queue_redraw()
 
@@ -118,6 +128,9 @@ func click(at: Vector2) -> void:
   cell_pressed.emit(tile.x,tile.y)
  else:
   for b in city.buildings:
+   if city.illustrated:
+    if b.hit_rect.has_point(p):object_pressed.emit(b);return
+    continue
    if b.park:continue
    var center=Art.iso(b.x+b.w/2.0,b.y+b.h/2.0)-Vector2(0,b.height*0.5)
    if absf(p.x-center.x)<(b.w+b.h)*18 and absf(p.y-center.y)<b.height*0.55+40:
@@ -126,6 +139,9 @@ func click(at: Vector2) -> void:
 func draw_actors(c: CanvasItem) -> void:
  if Game.state.is_empty():return
  if mode=="city":
+  if city.illustrated:
+   PaintedCity.actors(c,self)
+   return
   var count=14 if Game.settings.quality==0 else 32
   for i in range(count):
    var t=fmod(clock*(0.7 if i%2==0 else -0.6)+i*3.71+1000,34.0)
@@ -161,9 +177,20 @@ func draw_actors(c: CanvasItem) -> void:
    if int(e.floor)!=floor_id or e.status=="Вне офиса":continue
    var target=Art.iso(float(e.x)+0.45,float(e.y)+0.45)
    var key=str(e.id)
-   if not person_positions.has(key):person_positions[key]=Art.iso(0.4,6.4)
+   if not person_positions.has(key):person_positions[key]=target
+   if visual_targets.get(key,Vector2.INF)!=target:
+    var previous:Vector2=person_positions[key]
+    var start=Vector2i(roundi(previous.x/64+previous.y/32-0.45),roundi(previous.y/32-previous.x/64-0.45))
+    var route=OfficeSim.path(company,start,Vector2i(int(e.x),int(e.y)),floor_id)
+    var points: Array=[]
+    for cell in route:points.append(Art.iso(cell.x+0.45,cell.y+0.45))
+    visual_routes[key]=points
+    visual_targets[key]=target
    if Game.speed>0:
-    person_positions[key]=person_positions[key].lerp(target,0.12)
+    var route=visual_routes.get(key,[])
+    if not route.is_empty():
+     person_positions[key]=person_positions[key].move_toward(route[0],frame_delta*90.0*sqrt(Game.speed))
+     if person_positions[key].distance_to(route[0])<1:route.pop_front()
    var pos:Vector2=person_positions[key]
    var walking=pos.distance_to(target)>3
    Art.person(c,pos,1.15,e.appearance,clock*8 if walking else 0,not walking)

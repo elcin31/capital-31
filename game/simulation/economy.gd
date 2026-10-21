@@ -10,7 +10,7 @@ static func world_start(seed_value: int) -> Dictionary:
  var names=["Kaiser Analytics","Nova Commerce","Atlas Works","Nexa Systems","Mercury Market","Helix Industries","Cloudline","Urban Goods","Forge & Co","Aurora Digital","Lotus Stores","Vector Manufacturing"]
  for i in range(12):
   competitors.append({"id":i,"name":names[i],"industry":i%3,"city":i%5,"cash":18000000+i*1500000,"debt":i*200000,"staff":4+i%5,"price":3500+i*200,"quality":45.0+i*2,"awareness":30.0+i*2,"share":0.0,"revenue":0,"profit":0,"age":0,"products":1,"strategy":i%3,"status":"Развивается","active":true,"history":[],"decision":"Изучает рынок"})
- return {"seed":seed_value,"event":0,"next_event":25,"demand":1.0,"wages":1.0,"supply":1.0,"rate":0.0,"competitors":competitors,"history":[]}
+ return {"seed":seed_value,"event":0,"next_event":25,"demand":1.18,"wages":1.0,"supply":1.0,"rate":0.0,"competitors":competitors,"history":[]}
 
 static func hour(state: Dictionary) -> void:
  state.hour+=1
@@ -20,6 +20,7 @@ static func hour(state: Dictionary) -> void:
   if c.status=="Ликвидирована": continue
   c.day=day
   var work=OfficeSim.employee_hour(c,h) if c.office.rented else 0.0
+  c.work_today=float(c.get("work_today",0.0))+work
   var assigned: Array=[]
   for p in c.products:
    if p.stage in ["Идея","Исследование","Разработка","Тестирование","Обновление"]: assigned.append(p)
@@ -48,6 +49,7 @@ static func day_tick(state: Dictionary) -> void:
  var day=int(state.hour)/24
  var world=state.world
  if day>=int(world.next_event):
+  if int(world.event)==1:world.survived_recession=true
   var event_id=(int(world.seed)+day/25*7)%Catalog.EVENTS.size()
   world.event=event_id
   var ev=Catalog.EVENTS[event_id]
@@ -115,15 +117,18 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
    l.expense(day,"Хостинг и поддержка: "+p.name,int(revenue*0.08)+150,"maintenance")
   elif c.industry==1:
    var capacity=int(OfficeSim.bonus(c,["shelf"]))*100
+   var space=capacity
+   for stock_product in c.products:space-=int(stock_product.stock)+int(stock_product.materials)
    if p.auto_supply and capacity>0 and p.stock<capacity/2:
-    procure(l,p,mini(capacity-int(p.stock),80),0.50*world.supply,day,false)
-   sold=mini(int(p.stock),potential if OfficeSim.bonus(c,["checkout"])>0 and c.employees.size()>0 else 0)
+    procure(l,p,mini(space,80),0.50*world.supply,day,false)
+   sold=mini(int(p.stock),mini(potential,int(c.get("work_today",0)*2.5)) if OfficeSim.bonus(c,["checkout"])>0 else 0)
    revenue=sold*int(p.price)
   else:
    var capacity=int(OfficeSim.bonus(c,["shelf"]))*100
-   if p.auto_supply and capacity>0 and p.materials<capacity/2: procure(l,p,mini(capacity-int(p.materials),80),0.28*world.supply,day,true)
-   var skill: float=0
-   for e in c.employees: skill+=(e.skill/100.0)*(1.0 if e.role==6 else 0.5)
+   var space=capacity
+   for stock_product in c.products:space-=int(stock_product.stock)+int(stock_product.materials)
+   if p.auto_supply and capacity>0 and p.materials<capacity/2: procure(l,p,mini(space,80),0.28*world.supply,day,true)
+   var skill: float=float(c.get("work_today",0))/8.0
    var produced=mini(int(p.materials),int(OfficeSim.bonus(c,["machine"])*12*skill*city.infra))
    if int(world.event)==6: produced=int(produced*0.6)
    p.materials-=produced; p.stock+=produced
@@ -131,7 +136,10 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
    revenue=sold*int(p.price)
   if c.industry!=0 and sold>0:
    p.stock-=sold
-   var cost=mini(int(l.accounts.inventory),sold*int(p.unit_cost))
+   var held_before=int(p.stock)+int(p.materials)+sold
+   var stock_value=int(p.get("inventory_value",held_before*int(p.unit_cost)))
+   var cost=stock_value if sold==held_before else int(stock_value*sold/maxi(1,held_before))
+   p.inventory_value=stock_value-cost
    l.post(day,"Себестоимость: "+p.name,{"inventory":-cost,"earnings":-cost},"operating",{"cogs":cost})
    p.customers+=sold
   if revenue>0:
@@ -142,7 +150,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
   p.daily_revenue=revenue
   p.sales=sold
  if day%30==0:
-  var pl=l.report(day-29,day)
+  var pl=l.report(0 if day==30 else day-29,day)
   var tax=maxi(0,int(pl.ebit-pl.interest)*float(city.tax))
   if tax>0: l.post(day,"Налог на прибыль",{"tax_payable":tax,"earnings":-tax},"operating",{"tax":tax})
   var payables=int(l.accounts.ap)
@@ -153,6 +161,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
  c.history.append({"day":day,"revenue":summary.revenue,"profit":summary.net,"cash":l.accounts.cash,"employees":c.employees.size(),"operating":summary.operating})
  if c.history.size()>360: c.history.pop_front()
  c.ledger=l.export_data()
+ c.work_today=0.0
  if l.accounts.cash<0:
   c.insolvent_days+=1
   if c.insolvent_days==1: notify(state,"Кассовый разрыв",c.name+": 10 дней для восстановления ликвидности.","warning")
@@ -165,10 +174,12 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
   if c.status=="Банкротство": c.status="Работает"; notify(state,"Ликвидность восстановлена",c.name,"success")
 
 static func procure(l: Ledger, p: Dictionary, units: int, ratio: float, day: int, raw: bool) -> bool:
+ if units<=0:return false
  var cost=int(p.price*ratio)
  units=mini(units,int(maxi(0,int(l.accounts.cash))/maxi(1,cost)))
  if units<=0: return false
  var held=int(p.stock)+int(p.materials)
+ p.inventory_value=int(p.get("inventory_value",held*int(p.unit_cost)))+units*cost
  p.unit_cost=int((held*int(p.unit_cost)+units*cost)/maxi(1,held+units))
  if raw: p.materials+=units
  else: p.stock+=units
@@ -220,7 +231,7 @@ static func missions(state: Dictionary) -> void:
    conditions[9]=conditions[9] or p.revenue>0
  conditions[6]=state.companies.size()>1
  conditions[7]=revenue*12>=100000000
- conditions[8]=int(state.hour)/24>50 and state.world.event!=1
+ conditions[8]=bool(state.world.get("survived_recession",false))
  var titles=["Первый офис","Первая команда","От идеи к продукту","100 клиентов","Операционная прибыль","Первый инвестор","Новый филиал","Миллион в год","Через экономический цикл","Первая выручка"]
  for i in range(conditions.size()):
   if conditions[i] and not str(i) in state.achievements:

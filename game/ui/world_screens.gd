@@ -72,6 +72,8 @@ func show_world() -> void:
   if c.status=="Ликвидирована":continue
   var l=Ledger.new(c.ledger);var r=l.report(maxi(0,Game.day()-29))
   cash+=int(l.accounts.cash);rev+=int(r.revenue);profit+=int(r.net);debt+=int(l.accounts.debt)
+  for entry in l.journal:
+   if entry.memo=="Внутригрупповые дивиденды" and int(entry.day)>=maxi(0,Game.day()-29):rev-=int(entry.cash);profit-=int(entry.cash)
  var summary=UI.row(col)
  UI.metric(summary,"ДЕНЬГИ ГРУППЫ",Catalog.money(cash),UI.BLUE)
  UI.metric(summary,"ВЫРУЧКА / 30 ДН.",Catalog.money(rev))

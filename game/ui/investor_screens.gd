@@ -56,7 +56,7 @@ func show_negotiation() -> void:
  var dialogue=UI.card(col,Color("133e59"))
  UI.text(dialogue,"«"+n.dialogue+"»",19,Color.WHITE)
  if n.closed:
-  UI.button(col,"Вернуться к компании",func():ui.close_panel();Game.updated.emit(),"true"=="true")
+  UI.button(col,"Вернуться к компании",func():ui.close_panel();Game.updated.emit(),true)
  else:
   var grid=GridContainer.new();grid.columns=3;grid.add_theme_constant_override("h_separation",10);grid.add_theme_constant_override("v_separation",10);col.add_child(grid)
   var actions=[["accept","Принять предложение"],["counter","Предложить меньшую долю"],["more","Запросить большую сумму"],["reports","Показать финансовые отчёты"],["growth","Показать рост клиентов"],["vision","Представить стратегию"],["middle","Предложить меньший раунд"],["later","Перенести встречу"],["decline","Отказаться"]]
