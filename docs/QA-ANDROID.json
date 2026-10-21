@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "date_utc": "2026-10-21T13:56:40.603589+00:00",
+  "environment": {
+    "os": "Android 11, API 30, x86_64",
+    "emulator": "Android Emulator 37.3.5",
+    "cpu": "TCG software emulation, no KVM",
+    "gpu": "host OpenGL, Mesa llvmpipe GLES 3.1",
+    "display": "1280x720 landscape"
+  },
+  "method": "Actual Android APK installation, ADB pointer taps, screenshots, application force-stop and relaunch, private save inspection for QA",
+  "apk_source_commit": "9a8994c5985a4d8d138d2ea257fff242d5b65a0e",
+  "final_apk_sha256": "82f304e029452dffacef53102c0004be6082cdeda035523f6d5543c55046f113",
+  "full_gameplay_scope": "Full new-game-to-investment scenario ran on release candidates; the final APK was then installed, its installed SHA-256 verified, and the same company restored and continued.",
+  "gameplay_actions_passed": [
+    "Main menu, new game, modular founder appearance customization",
+    "City selection and company registration",
+    "Office rental and interior entry",
+    "Room construction, workstation purchase and employee hiring",
+    "Product creation, development at x5/x10, launch, customers and revenue",
+    "P&L and Cash Flow inspection",
+    "Investor selection, financial evidence, counter-offer, investment acceptance",
+    "Corporate cash increase and founder equity dilution",
+    "Manual slot 1 and automatic slot 0 persistence",
+    "Force-stop, final APK update, relaunch, Continue and office restoration",
+    "Continue simulation after loading and save again"
+  ],
+  "offline": {
+    "wifi_disabled": true,
+    "mobile_data_disabled": true,
+    "apk_internet_permission": false
+  },
+  "final_apk_install": "Success",
+  "installed_apk_sha256_matches_distribution": true,
+  "apk_signature": {
+    "v2": true,
+    "v3": true,
+    "certificate": "Local RSA 2048 test certificate, capitaltest"
+  },
+  "zipalign_16k_check": "passed",
+  "save_restore": {
+    "version": 1,
+    "exact_payload_checksum_before_and_after_reload": "a8f01d482d0c52f7f00f11fae1a6e16b595013fc7a05df2e6657e50c889d576b",
+    "manual_and_auto_slots_matched": true,
+    "hour_after_restore": 2836,
+    "hour_after_continuing": 2846,
+    "balance_error": 0,
+    "cash_flow_reconciles": true,
+    "restored_state_file": "qa/android/RESTORED-STATE.json",
+    "continued_state_file": "qa/android/SAVE-STATE.json"
+  },
+  "evidence_directory": "docs/qa/android/",
+  "not_performed": [
+    "Physical smartphone test",
+    "Redmi Note 12 FPS measurement",
+    "Real multi-finger pinch gesture on Android",
+    "Physical device rotation",
+    "Long-duration sandbox balance validation"
+  ],
+  "environment_notes": [
+    "SwiftShader indirect did not support the required shader uniform capacity; host Mesa OpenGL was used successfully.",
+    "Software-emulated Android System UI was restarted during initial QA to dismiss an OS ANR; no claim of hardware performance is made."
+  ]
+}

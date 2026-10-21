@@ -6,10 +6,11 @@ assert apk.is_file() and apk.stat().st_size>1000000, 'Real APK required'
 sdk=root/'.toolchain/android-sdk/build-tools/35.0.0'
 verify=subprocess.run([str(sdk/'apksigner'),'verify','--verbose',str(apk)],capture_output=True,text=True,check=True).stdout
 badging=subprocess.run([str(sdk/'aapt2'),'dump','badging',str(apk)],capture_output=True,text=True,check=True).stdout
-commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+commit=(dist/'SOURCE-COMMIT.txt').read_text().strip() if (dist/'SOURCE-COMMIT.txt').exists() else subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 digest=hashlib.sha256(apk.read_bytes()).hexdigest()
 economy=json.loads((root/'docs/QA-ECONOMY.json').read_text())
 gui=json.loads((root/'docs/QA-GUI.json').read_text())
+restart=json.loads((root/'docs/QA-RESTART.json').read_text())
 android=json.loads((root/'docs/QA-ANDROID.json').read_text()) if (root/'docs/QA-ANDROID.json').exists() else {'status':'Not yet recorded'}
 readme='''CAPITAL: Business Empire — Android 1.0
 Подписанная игровая тестовая сборка для личного использования.
@@ -66,6 +67,7 @@ ACTUALLY EXECUTED CHECKS
 Economy: {economy['checks']} checks, {economy['failed']} failures (Godot headless).
 GUI: {gui['checks']} checks, {gui['failed']} failures (Xvfb/Mesa, actual pointer events,
 plus touch gesture events; this suite is a desktop test of Android game logic).
+New-process save restoration: {restart['passed']} — {restart['scenario']}
 Android emulator evidence:
 {json.dumps(android,ensure_ascii=False,indent=2)}
 Physical smartphone performance: NOT MEASURED.

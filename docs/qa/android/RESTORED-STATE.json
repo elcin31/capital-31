@@ -1,0 +1,48 @@
+{
+  "appearance": {
+    "accessory": 1,
+    "eyes": 1,
+    "face": 1,
+    "gender": 1,
+    "hair": 1,
+    "hair_color": 1,
+    "outfit": 1,
+    "preset": 1,
+    "skin": 1,
+    "style": 0
+  },
+  "balance_error": 0,
+  "cap_table": [
+    {
+      "id": "founder",
+      "name": "Алекс Волков",
+      "share": 0.857311406077184
+    },
+    {
+      "id": "investor_0",
+      "name": "Клара Вебер",
+      "share": 0.142688593922816
+    }
+  ],
+  "cash": 16754185,
+  "cashflow_reconciles": true,
+  "employees": 1,
+  "founder": "Алекс",
+  "furniture": 1,
+  "hour": 2836,
+  "name": "NOVA Technologies",
+  "personal": 22000000,
+  "products": [
+    {
+      "customers": 421,
+      "name": "Nexa AI",
+      "progress": 175.0,
+      "required": 175.0,
+      "revenue": 2238144,
+      "stage": "Рост"
+    }
+  ],
+  "rented": true,
+  "rooms": 1,
+  "rounds": 1
+}

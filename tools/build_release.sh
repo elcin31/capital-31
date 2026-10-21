@@ -8,6 +8,7 @@ if [ ! -f .toolchain/capital-test.keystore ]; then
 fi
 godot --headless --path game --editor --quit
 godot --headless --path game --script res://tests/economy_test.gd
+git rev-parse HEAD > dist/SOURCE-COMMIT.txt
 GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$project_root/.toolchain/capital-test.keystore" \
 GODOT_ANDROID_KEYSTORE_RELEASE_USER=capitaltest \
 GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android \
