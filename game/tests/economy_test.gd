@@ -179,7 +179,7 @@ func run() -> void:
  fresh()
  var cash_available=int(game.ledger().accounts.cash)
  var private_before=int(game.state.founder.personal)
- game.finance_action("salary",300000000)
+ game.finance_action("salary",3000000000)
  Economy.company_day(game.state,game.company(),1)
  check(game.state.founder.personal-private_before==cash_available,"Зарплата основателя ограничена реальными деньгами компании")
  check(game.ledger().accounts.cash==0 and game.ledger().balance_error()==0,"Зарплата не создаёт личные деньги из кассового разрыва")
