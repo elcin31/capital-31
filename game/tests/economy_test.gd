@@ -183,6 +183,63 @@ func run() -> void:
  Economy.company_day(game.state,game.company(),1)
  check(game.state.founder.personal-private_before==cash_available,"Зарплата основателя ограничена реальными деньгами компании")
  check(game.ledger().accounts.cash==0 and game.ledger().balance_error()==0,"Зарплата не создаёт личные деньги из кассового разрыва")
+ var stock_ledger=Ledger.new()
+ stock_ledger.post(0,"Капитал для закупки",{"cash":1000000,"capital":1000000},"financing")
+ var stock_product={"name":"Тестовый товар","price":4900,"stock":0,"materials":0,"unit_cost":0}
+ Economy.procure(stock_ledger,stock_product,10,0.5,1,false)
+ var wholesale=int(stock_product.unit_cost)
+ stock_product.price=9900
+ Economy.procure(stock_ledger,stock_product,10,0.5,2,false)
+ check(int(stock_product.unit_cost)==wholesale,"Изменение розничной цены не меняет закупочную стоимость")
+ check(stock_ledger.accounts.inventory==20*wholesale and stock_ledger.balance_error()==0,"Переоценка цены продажи не создаёт стоимость запасов")
+ fresh()
+ game.start_product("Ценовая стратегия",4900,75,1,250000,0)
+ game.company().products[0].stage="Поддержка"
+ game.company().products[0].quality=80.0
+ game.company().products[0].awareness=80.0
+ var pricing_base=game.state.duplicate(true)
+ var normal=pricing_base.duplicate(true)
+ var discount=pricing_base.duplicate(true)
+ discount.world.competitors[0].price=500
+ Economy.company_day(normal,normal.companies[0],1)
+ Economy.company_day(discount,discount.companies[0],1)
+ check(discount.companies[0].products[0].customers<normal.companies[0].products[0].customers,"Снижение цены конкурента отнимает спрос у игрока")
+ normal=pricing_base.duplicate(true);discount=pricing_base.duplicate(true)
+ discount.world.competitors[0].price=500
+ Economy.competitors_tick(normal,1);Economy.competitors_tick(discount,1)
+ check(discount.world.competitors[0].profit<normal.world.competitors[0].profit and discount.world.competitors[0].revenue!=normal.world.competitors[0].revenue,"Цена ИИ-компании влияет на её выручку и маржу")
+ normal=pricing_base.duplicate(true);discount=pricing_base.duplicate(true)
+ normal.companies[0].products[0].innovation=0.0
+ discount.companies[0].products[0].innovation=100.0
+ Economy.company_day(normal,normal.companies[0],1);Economy.company_day(discount,discount.companies[0],1)
+ check(discount.companies[0].products[0].customers>normal.companies[0].products[0].customers,"Инновационность продукта меняет реальный спрос")
+ normal=pricing_base.duplicate(true);discount=pricing_base.duplicate(true)
+ normal.founder.skills[0]=10.0;discount.founder.skills[0]=90.0
+ for world_state in [normal,discount]:
+  world_state.companies[0].products[0].stage="Исследование"
+  world_state.companies[0].products[0].progress=0.0
+  Economy.hour(world_state)
+ check(discount.companies[0].products[0].progress>normal.companies[0].products[0].progress,"Лидерство основателя ускоряет работу команды")
+ normal=pricing_base.duplicate(true);discount=pricing_base.duplicate(true)
+ normal.founder.skills[5]=10.0;discount.founder.skills[5]=90.0
+ for world_state in [normal,discount]:
+  Economy.hour(world_state);Economy.hour(world_state)
+ check(discount.companies[0].employees[0].fatigue<normal.companies[0].employees[0].fatigue,"Навык управления снижает накопление усталости")
+ normal=pricing_base.duplicate(true);discount=pricing_base.duplicate(true)
+ normal.founder.skills[1]=10.0;discount.founder.skills[1]=90.0
+ for world_state in [normal,discount]:
+  Negotiation.start(world_state,world_state.companies[0],0,1000000)
+  Negotiation.respond(world_state,world_state.companies[0],"reports")
+ check(discount.companies[0].negotiation.interest>normal.companies[0].negotiation.interest,"Финансовый навык улучшает представление отчётов инвестору")
+ game.state=pricing_base.duplicate(true);game.state.founder.skills[4]=10.0;game.product_action(0,"campaign")
+ var low_awareness=game.company().products[0].awareness
+ game.state=pricing_base.duplicate(true);game.state.founder.skills[4]=90.0;game.product_action(0,"campaign")
+ check(game.company().products[0].awareness>low_awareness,"Маркетинговый навык повышает отдачу от рекламного бюджета")
+ fresh()
+ check(game.build_room(2,6,1,0).is_empty() and game.buy_furniture(2,7,2,0).is_empty(),"Рабочая переговорная построена и оборудована")
+ game.company().day=2
+ OfficeSim.employee_hour(game.company(),15)
+ check(game.company().employees[0].status=="Совещание" and game.company().employees[0].route.size()>0,"Сотрудник сам идёт на совещание по доступному маршруту")
  var result={"checks":checks,"failed":failures.size(),"failures":failures,"industry_evidence":evidence,"godot":Engine.get_version_info().string}
  var out=FileAccess.open("res://../docs/QA-ECONOMY.json",FileAccess.WRITE);out.store_string(JSON.stringify(result,"  "));out.close()
  print("RESULT: ",checks," checks, ",failures.size()," failed")

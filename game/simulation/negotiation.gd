@@ -18,6 +18,7 @@ static func start(state: Dictionary, c: Dictionary, investor_id: int, amount: in
  var quality: float=0
  for p in c.products: quality=maxf(quality,p.quality)
  var interest=25.0+inv.risk*18.0+(20.0 if inv.industry==c.industry else -8.0)+quality*0.12+state.founder.skills[6]*0.12+(memory.trust-50)*0.2
+ interest+=(Catalog.CITIES[int(c.city)].investors-1.0)*6.0+(Catalog.CITIES[int(c.city)].climate-0.85)*4.0
  interest+=clampf(float(r.revenue)/150000.0,0,15)+clampf(float(r.net)/300000.0,-15,10)-minf(20,float(l.accounts.debt)/2000000)
  var value=valuation(c)
  var remaining=maxi(0,int(inv.capital)-int(memory.get("invested",0)))
@@ -63,7 +64,7 @@ static func respond(state: Dictionary, c: Dictionary, action: String) -> String:
  n.patience-=1
  match action:
   "reports":
-   var gain=12 if r.net>0 else (6 if r.revenue>0 else -3)
+   var gain=(12 if r.net>0 else (6 if r.revenue>0 else -3))+int(state.founder.skills[1]/20.0)
    n.interest+=gain
    n.dialogue="Положительная прибыль — хороший знак." if r.net>0 else "Прозрачность ценю. Но мне нужен путь к прибыли."
   "growth":

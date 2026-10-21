@@ -146,7 +146,7 @@ static func has_room(c: Dictionary, kind: String) -> bool:
   if Catalog.ROOM_DEFS[int(r.type)].kind==kind: return true
  return false
 
-static func employee_hour(c: Dictionary, hour: int) -> float:
+static func employee_hour(c: Dictionary, hour: int, leadership: float = 35.0, management: float = 35.0) -> float:
  var work: float = 0.0
  var seats = stations(c)
  for i in range(c.employees.size()):
@@ -157,12 +157,25 @@ static func employee_hour(c: Dictionary, hour: int) -> float:
   var status = "Вне офиса"
   if hour >= int(e.get("start",8)) and hour < int(e.get("end",18)):
    if e.fatigue > 65 or hour==12:
-    status="Отдыхает" if has_room(c,"break") else "Перерыв"
+    status="Перерыв / общение" if has_room(c,"break") and c.employees.size()>1 else "Перерыв"
     e.fatigue = maxf(0,e.fatigue-((18+bonus(c,["sofa","coffee"])*2) if has_room(c,"break") else 8))
     for r in c.office.rooms:
      if Catalog.ROOM_DEFS[int(r.type)].kind=="break":
-      target=Vector2i(int(r.x),int(r.y)+1)
+      var offsets=[Vector2i(0,1),Vector2i(1,2),Vector2i(2,2),Vector2i(3,1)]
+      var candidate=Vector2i(int(r.x),int(r.y))+offsets[i%4]
+      target=candidate if not path(c,Vector2i(0,6),candidate,int(r.floor)).is_empty() else Vector2i(int(r.x),int(r.y)+1)
       floor_id=int(r.floor)
+      break
+   elif hour==15 and int(c.get("day",0))%5==2 and (int(e.id)+int(c.get("day",0)))%2==0 and has_room(c,"meeting"):
+    status="Совещание"
+    e.efficiency=0.15
+    e.satisfaction=minf(100,e.satisfaction+0.2)
+    for r in c.office.rooms:
+     if Catalog.ROOM_DEFS[int(r.type)].kind=="meeting":
+      floor_id=int(r.floor)
+      var offsets=[Vector2i(0,1),Vector2i(1,2),Vector2i(2,2),Vector2i(3,1)]
+      var candidate=Vector2i(int(r.x),int(r.y))+offsets[(i/2)%4]
+      target=candidate if not path(c,Vector2i(0,6),candidate,floor_id).is_empty() else Vector2i(int(r.x),int(r.y)+1)
       break
    elif i < seats.size():
     var seat = seats[i]
@@ -172,12 +185,13 @@ static func employee_hour(c: Dictionary, hour: int) -> float:
     var specialty = (c.industry==0 and int(e.role) in [0,8]) or (c.industry==1 and int(e.role) in [4,5]) or (c.industry==2 and int(e.role) in [6,7])
     e.efficiency = (0.35+float(e.skill)/100.0)*(1.0-e.fatigue/150.0)*(0.4+e.satisfaction/160.0)*minf(1.6,seat.bonus)*(1.0 if specialty else 0.65)
     e.efficiency*=0.85+float(e.get("motivation",80))/500.0
+    e.efficiency*=1.0+leadership*0.001
     if has_room(c,"ceo"):e.efficiency*=1.02
     if has_room(c,"restroom"):e.efficiency*=1.02
     if path(c,Vector2i(0,6),target,floor_id).is_empty():
      e.efficiency=0
      status="Нет прохода"
-    e.fatigue=minf(100,e.fatigue+3.0)
+    e.fatigue=minf(100,e.fatigue+3.0*(1.0-management/500.0))
     e.experience+=e.efficiency*0.02
     e.skill=minf(100,e.skill+e.efficiency*0.005)
    else:

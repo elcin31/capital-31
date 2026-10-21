@@ -79,7 +79,7 @@ func show_employees() -> void:
   var info=UI.column(row)
   UI.label(info,e.name+" · "+Catalog.ROLES[int(e.role)],18,UI.TEXT,true)
   var status=UI.label(info,"",14,UI.MUTED)
-  ui.bind_text(status,func():return "%s · Навык %.0f · Усталость %.0f%% · Мотивация %.0f%% · Эффективность %.0f%%"%[e.status,e.skill,e.fatigue,e.satisfaction,e.efficiency*100])
+  ui.bind_text(status,func():return "%s · Навык %.0f · Усталость %.0f%% · Настроение %.0f%% · Мотивация %.0f%% · Эфф. %.0f%%"%[e.status,e.skill,e.fatigue,e.satisfaction,float(e.get("motivation",80)),e.efficiency*100])
   UI.label(info,Catalog.money(e.wage*30)+" / месяц",14,UI.BLUE,true)
   var actions=UI.row(info)
   UI.button(actions,"Обучить · €500",func():ui.perform(func():return Game.employee_action(i,"train"),show_employees))

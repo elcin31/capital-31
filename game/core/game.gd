@@ -270,7 +270,7 @@ func product_action(index: int, action: String, value: int = 0) -> String:
   "price": p.price=maxi(500,value)
   "campaign":
    if l.accounts.cash<120000: return "Кампания стоит €1 200"
-   l.expense(day(),"Продвижение: "+p.name,120000,"marketing"); p.awareness=minf(100,p.awareness+15)
+   l.expense(day(),"Продвижение: "+p.name,120000,"marketing"); p.awareness=minf(100,p.awareness+12+state.founder.skills[4]*0.1)
    state.founder.skills[4]=minf(100,state.founder.skills[4]+0.5)
   "update":
    if not p.stage in ["Поддержка","Рост","Спад"]: return "Сначала выпустите продукт"
@@ -460,6 +460,7 @@ func acquire_rival(rival_id: int) -> String:
  child.next_employee=child.employees.size()
  child.products.append({"id":0,"name":rival.name+" One","kind":0,"audience":1,"price":int(rival.price),"quality":float(rival.quality),"innovation":50.0,"fit":70.0,"awareness":float(rival.awareness),"satisfaction":float(rival.quality),"stage":"Рост","progress":175.0,"required":175.0,"customers":100,"revenue":0,"daily_revenue":0,"sales":0,"stock":0,"materials":0,"unit_cost":0,"inventory_value":0,"auto_supply":true,"age":90})
  child.next_product=1
+ child.products[0].cost_basis=int(rival.get("cost_basis",3500+rival_id*200))
  state.companies.append(child)
  rival.active=false; rival.status="Приобретена"; rival.share=0
  Economy.notify(state,"Приобретение завершено",child.name+" вошла в вашу группу вместе с продуктом, командой, активами и долгом.","success")

@@ -19,7 +19,7 @@ static func hour(state: Dictionary) -> void:
  for c in state.companies:
   if c.status=="Ликвидирована": continue
   c.day=day
-  var work=OfficeSim.employee_hour(c,h) if c.office.rented else 0.0
+  var work=OfficeSim.employee_hour(c,h,float(state.founder.skills[0]),float(state.founder.skills[5])) if c.office.rented else 0.0
   c.work_today=float(c.get("work_today",0.0))+work
   var assigned: Array=[]
   for p in c.products:
@@ -99,7 +99,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
    c.receivables.erase(receivable)
  var competition: float=0.7
  for rival in world.competitors:
-  if rival.active and int(rival.industry)==int(c.industry): competition+=(rival.quality/100.0)*(rival.awareness/100.0)*0.4
+  if rival.active and int(rival.industry)==int(c.industry): competition+=(rival.quality/100.0)*(rival.awareness/100.0)*0.4*pow(4900.0/maxf(500,rival.price),1.15)
  for p in c.products:
   if not p.stage in ["Поддержка","Рост","Спад"]: continue
   p.age+=1
@@ -110,6 +110,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
   if int(world.event)==1 and c.industry==1: demand*=0.85
   if int(world.event)==5 and c.industry==0: demand*=1.25
   var attraction=(p.quality/100.0)*(p.fit/100.0)*(0.3+p.awareness/70.0)*(4900.0/maxf(500,p.price))*city.power
+  attraction*=(0.9+p.innovation/500.0)*(0.8+p.satisfaction/500.0)
   var potential=int(maxf(0,round(30*demand*attraction/(competition*city.competition))))
   if p.stage=="Спад": potential=int(potential*0.6)
   var sold: int=0
@@ -180,7 +181,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
 
 static func procure(l: Ledger, p: Dictionary, units: int, ratio: float, day: int, raw: bool) -> bool:
  if units<=0:return false
- var cost=int(p.price*ratio)
+ var cost=int(p.get("cost_basis",4900)*ratio)
  units=mini(units,int(maxi(0,int(l.accounts.cash))/maxi(1,cost)))
  if units<=0: return false
  var held=int(p.stock)+int(p.materials)
@@ -209,8 +210,11 @@ static func competitors_tick(state: Dictionary, day: int) -> void:
    elif choice==6: c.cash+=1000000; c.decision="Привлекла инвестора"
    else: c.decision="Пересмотрела стратегию"
   var city=Catalog.CITIES[int(c.city)]
-  c.revenue=int(300000*state.world.demand*city.market*(c.quality/70.0)*(c.awareness/60.0)*minf(2,c.products))
-  c.profit=int(c.revenue*(0.75 if c.industry==0 else 0.42)-c.staff*city.wage-city.rent/30.0-c.debt*(city.rate+state.world.rate)/365.0)
+  var cost_basis=float(c.get("cost_basis",3500+int(c.id)*200))
+  var price_ratio=float(c.price)/cost_basis
+  c.revenue=int(300000*state.world.demand*city.market*(c.quality/70.0)*(c.awareness/60.0)*minf(2,c.products)*pow(price_ratio,-0.25)*minf(1.4,c.staff/4.0))
+  var margin=clampf(1.0-(0.25 if c.industry==0 else 0.58)/price_ratio,-1.5,0.95)
+  c.profit=int(c.revenue*margin-c.staff*city.wage-city.rent/30.0-c.debt*(city.rate+state.world.rate)/365.0)
   c.cash+=c.profit
   if c.cash<0: c.active=false; c.status="Банкротство"; notify(state,"Конкурент ушёл с рынка",c.name,"market")
   c.share=(c.quality/c.price)*c.awareness if c.active else 0
