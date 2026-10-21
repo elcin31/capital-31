@@ -134,6 +134,7 @@ func run() -> void:
  var person=game.state.founder.duplicate(true)
  check(game.finance_action("liquidate").is_empty(),"Ликвидация и расчёт с кредиторами")
  check(game.ledger().balance_error()==0,"Баланс после ликвидации")
+ check(not game.finance_action("loan",1000000).is_empty(),"Ликвидированная компания не может взять новый кредит")
  check(game.register_company(3,"Новый старт",1,4000000,0).is_empty(),"Новая компания тем же основателем")
  check(game.state.founder.first==person.first and game.state.founder.skills[3]==person.skills[3] and game.state.companies.size()==2,"Карьера и навыки переживают банкротство")
  fresh()

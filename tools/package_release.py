@@ -49,7 +49,7 @@ Android 7.0+ (API 24), OpenGL ES 3.0+. ARM64, ARMv7; x86_64 для эмулят�
 Подробности проверок, точная версия и commit — в BUILD-INFO.txt.
 '''
 (dist/'README.txt').write_text(readme,encoding='utf-8')
-metadata=[line for line in badging.splitlines() if line.startswith(('package:','sdkVersion:','targetSdkVersion:','native-code:','application-label:'))]
+metadata=[line for line in badging.splitlines() if line.startswith(('package:','minSdkVersion:','targetSdkVersion:','native-code:','application-label:'))]
 info=f'''CAPITAL Android 1.0.0 — signed personal test release
 Build UTC: {datetime.datetime.now(datetime.timezone.utc).isoformat()}
 Git commit: {commit}

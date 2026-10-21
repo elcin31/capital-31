@@ -100,6 +100,7 @@ func commit_ledger(l: Ledger) -> void:
  updated.emit()
 
 func rent_office() -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  if c.office.rented: return "Офис уже арендован"
  var cost=int(Catalog.CITIES[int(c.city)].rent)*2
@@ -113,6 +114,7 @@ func rent_office() -> String:
  return ""
 
 func build_room(type: int, x: int, y: int, floor_id: int) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var l=ledger()
  var cost=int(Catalog.ROOM_DEFS[type].cost)
  if l.accounts.cash<cost: return "Недостаточно средств"
@@ -125,6 +127,7 @@ func build_room(type: int, x: int, y: int, floor_id: int) -> String:
  return ""
 
 func buy_furniture(type: int, x: int, y: int, floor_id: int, rotated: bool = false) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var l=ledger()
  var cost=int(Catalog.FURNITURE[type].cost)
  if l.accounts.cash<cost: return "Недостаточно средств"
@@ -137,6 +140,7 @@ func buy_furniture(type: int, x: int, y: int, floor_id: int, rotated: bool = fal
  return ""
 
 func alter_building(tool: String, x: int, y: int, floor_id: int) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  var r=OfficeSim.room_at(c,x,y,floor_id)
  if tool=="cover":
@@ -180,6 +184,7 @@ func alter_building(tool: String, x: int, y: int, floor_id: int) -> String:
  return ""
 
 func add_floor() -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  if not company().office.rented: return "Сначала арендуйте офис"
  if company().office.floors>=4: return "Доступно максимум 4 этажа"
  var l=ledger()
@@ -191,6 +196,7 @@ func add_floor() -> String:
  return ""
 
 func hire(candidate: Dictionary) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  if not company().office.rented: return "Нужен арендованный офис"
  if company().employees.size()>=40: return "Лимит команды: 40 сотрудников"
  var e=candidate.duplicate(true)
@@ -212,6 +218,7 @@ func candidates() -> Array:
  return result
 
 func employee_action(index: int, action: String, value: int = -1) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  if index<0 or index>=c.employees.size(): return "Сотрудник не найден"
  var e=c.employees[index]
@@ -232,6 +239,7 @@ func employee_action(index: int, action: String, value: int = -1) -> String:
  return ""
 
 func start_product(name_text: String, price: int, quality: int, audience: int, budget: int, kind: int) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  if not c.office.rented or c.employees.is_empty(): return "Нужны офис и сотрудник"
  if OfficeSim.stations(c).is_empty(): return "Купите доступное рабочее место"
@@ -249,6 +257,7 @@ func start_product(name_text: String, price: int, quality: int, audience: int, b
  return ""
 
 func product_action(index: int, action: String, value: int = 0) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  if index<0 or index>=c.products.size(): return "Продукт не найден"
  var p=c.products[index]
@@ -281,6 +290,7 @@ func product_action(index: int, action: String, value: int = 0) -> String:
  return ""
 
 func finance_action(action: String, amount: int = 0, floating: bool = true) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  var l=ledger()
  match action:
@@ -390,6 +400,7 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
  return ""
 
 func open_branch(city_id: int) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var c=company()
  var l=ledger()
  var amount: int=4000000
@@ -411,6 +422,7 @@ func save_slot(slot: int) -> String:
  return err
 
 func acquire_rival(rival_id: int) -> String:
+ if company().get("status","")=="Ликвидирована":return "Компания ликвидирована. Создайте новый бизнес в карьере основателя."
  var rival=state.world.competitors[rival_id]
  if not rival.active: return "Компания недоступна для покупки"
  var c=company()
