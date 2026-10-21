@@ -211,10 +211,10 @@ func hire(candidate: Dictionary) -> String:
 func candidates() -> Array:
  var result: Array=[]
  for i in range(6):
-  var n=(day()*5+i*7+int(state.world.seed))%24
+  var n=(day()*5+i*7+int(state.world.seed)+int(company().next_employee)*5)%24
   var role=[0,4,6][int(company().industry)] if i<3 else [1,2,8][i-3]
   var skill=40.0+((n*13+i*7)%45)*Catalog.CITIES[int(company().city)].talent
-  result.append({"name":Catalog.FIRST_NAMES[n]+" "+Catalog.LAST_NAMES[(n+i)%12],"role":role,"wage":int(Catalog.CITIES[int(company().city)].wage*state.world.wages*(0.7+skill/100.0)),"skill":minf(95,skill),"appearance":Catalog.appearance(n)})
+  result.append({"name":Catalog.FIRST_NAMES[n]+" "+Catalog.LAST_NAMES[(n+i+int(company().next_employee)/24)%12],"role":role,"wage":int(Catalog.CITIES[int(company().city)].wage*state.world.wages*(0.7+skill/100.0)),"skill":minf(95,skill),"appearance":Catalog.appearance(n+int(company().next_employee)*2)})
  return result
 
 func employee_action(index: int, action: String, value: int = -1) -> String:

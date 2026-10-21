@@ -133,7 +133,7 @@ func capture_all() -> void:
  finish();Game.rent_office()
  for room in [[11,1,1],[2,6,1],[14,11,1],[3,1,6],[12,6,6],[6,11,6]]:Game.build_room(room[0],room[1],room[2],0)
  for item in [[0,2,2],[1,3,3],[0,2,3],[0,3,2],[1,12,2],[9,13,3],[2,7,2],[10,9,4],[3,2,7],[4,4,8],[10,2,9],[5,7,7],[5,8,8],[0,12,7],[11,13,8],[10,14,9]]:Game.buy_furniture(item[0],item[1],item[2],0)
- for i in range(6):Game.hire(Game.candidates()[i])
+ for i in range(6):Game.hire(Game.candidates()[0])
  Game.start_product("Nexa AI",4900,75,1,250000,4)
  for i in range(24*38):Economy.hour(Game.state)
  Game.product_action(0,"launch")
