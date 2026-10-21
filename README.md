@@ -2,6 +2,10 @@
 Офлайн-игра для Android на Godot 4.6.3. Работа ведётся только в
 [elcin31/capital-31](https://github.com/elcin31/capital-31).
 
+[Скачать CAPITAL-Android-Release.zip — подписанная Android-сборка 1.0](https://github.com/elcin31/capital-31/releases/download/v1.0.0-test/CAPITAL-Android-Release.zip).
+Внутри APK, инструкция установки и сведения о сборке. Архив скачан обратно
+из Release и сверен с протестированным APK; отчёт — `docs/QA-DISTRIBUTION.json`.
+
 Игровая цепочка: создание героя и компании → один из пяти городов → аренда →
 изометрический офис → комнаты и мебель → сотрудники → продукт / товар /
 производство → продажи → финансовые отчёты → переговоры → инвестиции →

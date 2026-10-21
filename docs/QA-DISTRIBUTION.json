@@ -1,0 +1,18 @@
+{
+  "verified_at_utc": "2026-10-21T14:03:16.034055+00:00",
+  "release_url": "https://github.com/elcin31/capital-31/releases/tag/v1.0.0-test",
+  "download_url": "https://github.com/elcin31/capital-31/releases/download/v1.0.0-test/CAPITAL-Android-Release.zip",
+  "workflow_url": "https://github.com/elcin31/capital-31/actions/runs/39613124261",
+  "workflow_conclusion": "success",
+  "downloaded_back_from_release": true,
+  "downloaded_matches_local_zip": true,
+  "zip_size_bytes": 91771172,
+  "zip_sha256": "b61c76da6414a129c89edf2b09748c3bbdfaf83e982184302ea7e5093a6e0fcf",
+  "apk_sha256": "82f304e029452dffacef53102c0004be6082cdeda035523f6d5543c55046f113",
+  "contents": [
+    "CAPITAL-v1.0.apk",
+    "README.txt",
+    "BUILD-INFO.txt"
+  ],
+  "zip_crc_check": true
+}
