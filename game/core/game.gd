@@ -359,6 +359,31 @@ func save_slot(slot: int) -> String:
  message.emit("Игра сохранена" if err.is_empty() else err,"success" if err.is_empty() else "warning")
  return err
 
+func acquire_rival(rival_id: int) -> String:
+ var rival=state.world.competitors[rival_id]
+ if not rival.active: return "Компания недоступна для покупки"
+ var c=company()
+ var l=ledger()
+ var price=maxi(3000000,int(rival.cash-rival.debt+rival.revenue*12))
+ if l.accounts.cash<price: return "Недостаточно денег для приобретения"
+ l.post(day(),"Покупка: "+rival.name,{"cash":-price,"investments":price},"investing")
+ c.ledger=l.export_data()
+ var child=make_company(int(rival.city),rival.name,int(rival.industry),maxi(1000000,int(rival.cash)),0,int(c.id))
+ child.cap_table=[{"id":"company_%d"%int(c.id),"name":c.name,"share":1.0}]
+ child.office.rented=true
+ var room_type=[11,15,19][int(child.industry)]
+ OfficeSim.add_room(child,room_type,1,1,0)
+ var equipment=[0,7,8][int(child.industry)]
+ OfficeSim.add_furniture(child,equipment,2,2,0)
+ if child.industry!=0:
+  OfficeSim.add_room(child,16 if child.industry==1 else 22,7,1,0)
+  OfficeSim.add_furniture(child,6,8,2,0)
+ state.companies.append(child)
+ rival.active=false; rival.status="Приобретена"; rival.share=0
+ Economy.notify(state,"Приобретение завершено",child.name+" вошла в вашу группу. Настройте её команду и продукт.","success")
+ updated.emit()
+ return ""
+
 func load_slot(slot: int) -> String:
  var d=SaveStore.load_game(slot)
  if d.is_empty(): return "Сохранение отсутствует или повреждено"
