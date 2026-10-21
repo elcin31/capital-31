@@ -115,12 +115,13 @@ func build_sidebar() -> void:
  right_panel=PanelContainer.new();game_layer.add_child(right_panel)
  var col=UI.scroll(right_panel);col.add_theme_constant_override("separation",8)
  var heading=UI.row(col)
- UI.portrait(heading,Game.state.founder.appearance,Vector2(55,65))
+ var logo=UI.label(heading,["▥","◈","◎"][int(Game.company().logo)%3],44,UI.BLUE,true)
+ logo.custom_minimum_size=Vector2(55,65)
  var title=UI.column(heading)
  var name_label=UI.label(title,Game.company().name,17,UI.TEXT,true)
  name_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
  name_label.custom_minimum_size.x=125
- UI.text(title,"От идеи к большой компании",10,UI.MUTED)
+ UI.text(title,Catalog.MODELS[int(Game.company().industry)][int(Game.company().model)],10,UI.MUTED)
  UI.button(heading,"×",func():right_panel.hide());UI.separator(col)
  UI.label(col,"Динамика компании",16,UI.TEXT,true);UI.label(col,"● Выручка    ● Прибыль",11,UI.BLUE)
  chart=HistoryChart.new();chart.custom_minimum_size.y=115;chart.history=Game.company().history;col.add_child(chart)

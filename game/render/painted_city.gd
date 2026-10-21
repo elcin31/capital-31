@@ -25,7 +25,7 @@ static func background(c: CanvasItem, texture: Texture2D) -> void:
 static func actors(c: CanvasItem, view: WorldView) -> void:
  for b in view.city.buildings:
   var pos:Vector2=b.anchor
-  var label=Game.company().name if b.kind=="office" else b.name
+  var label=(["▥  ","◈  ","◎  "][int(Game.company().logo)%3]+Game.company().name) if b.kind=="office" else b.name
   var color=Art.CYAN if b.kind=="office" else (Color("ad80f3") if b.kind=="investor" else (Color("ef6577") if b.kind=="rival" else Art.BLUE))
   c.draw_set_transform(pos,0,Vector2.ONE/view.zoom_value)
   var style=UI.style(Color("133e59"),9,color)

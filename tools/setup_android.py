@@ -1,5 +1,5 @@
 """Install pinned Godot Android export tools locally; no root or cloud resources."""
-import io, os, pathlib, struct, urllib.request, zipfile
+import io, os, pathlib, struct, urllib.request, zipfile, re, shutil
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TC = ROOT / '.toolchain'
@@ -52,6 +52,17 @@ def install():
                 (target/'android-15').rename(sdk/'build-tools/35.0.0')
     for path in sdk.rglob('*'):
         if path.is_file() and (path.suffix == '' or path.name == 'apksigner'): path.chmod(0o755)
+    config_root=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))/'godot'
+    config_root.mkdir(parents=True,exist_ok=True)
+    config=config_root/'editor_settings-4.6.tres'
+    settings=config.read_text() if config.exists() else '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n'
+    java=pathlib.Path(shutil.which('java')).resolve().parents[1]
+    for key,value in {'android_sdk_path':str(sdk),'java_sdk_path':str(java),'shutdown_adb_on_exit':False}.items():
+        text_value='false' if value is False else '"'+value+'"'
+        line='export/android/'+key+' = '+text_value
+        pattern=r'^export/android/'+key+r' = .*'
+        settings=re.sub(pattern,lambda _:line,settings,flags=re.M) if re.search(pattern,settings,re.M) else settings+'\n'+line+'\n'
+    config.write_text(settings)
     print('Android SDK ready:',sdk,flush=True)
 
 if __name__ == '__main__': install()

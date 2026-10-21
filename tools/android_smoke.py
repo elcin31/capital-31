@@ -7,7 +7,7 @@ def run(*args):return subprocess.run([adb,*map(str,args)],capture_output=True,ti
 command=sys.argv[1]
 if command=='tap':
  run('shell','input','tap',int(sys.argv[2]),int(sys.argv[3]))
- time.sleep(2)
+ time.sleep(4)
 elif command=='shot':
  name=sys.argv[2]
  data=run('exec-out','screencap','-p')
@@ -19,11 +19,11 @@ elif command=='back':
 elif command=='launch':
  run('shell','am','start','-n','com.capital31.empire/com.godot.game.GodotAppLauncher');time.sleep(3)
 elif command=='restart':
- run('shell','input','keyevent',3);time.sleep(2)
+ run('shell','input','keyevent',3);time.sleep(4)
  run('shell','am','force-stop','com.capital31.empire')
  run('shell','am','start','-n','com.capital31.empire/com.godot.game.GodotAppLauncher');time.sleep(4)
 elif command=='save':
- run('shell','input','keyevent',3);time.sleep(2)
+ run('shell','input','keyevent',3);time.sleep(4)
  data=run('exec-out','cat','/data/user/0/com.capital31.empire/files/saves/slot_0.capital')
  (root/'.toolchain/android-slot.capital').write_bytes(data)
  print('Pulled actual Android save:',len(data),'bytes')
