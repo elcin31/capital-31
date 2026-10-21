@@ -1,0 +1,46 @@
+name: Publish verified Android ZIP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: android-release-artifacts
+      - name: Verify the exact APK tested on Android
+        run: |
+          python3 - <<'PY'
+          import hashlib, pathlib, zipfile
+          archive = pathlib.Path('dist/CAPITAL-Android-Release.zip')
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == 'b61c76da6414a129c89edf2b09748c3bbdfaf83e982184302ea7e5093a6e0fcf'
+          with zipfile.ZipFile(archive) as z:
+              assert z.testzip() is None
+              assert z.namelist() == ['CAPITAL-v1.0.apk', 'README.txt', 'BUILD-INFO.txt']
+              assert hashlib.sha256(z.read('CAPITAL-v1.0.apk')).hexdigest() == '82f304e029452dffacef53102c0004be6082cdeda035523f6d5543c55046f113'
+          print('Verified signed APK and complete ZIP against local Android QA build.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CAPITAL-Android-Release
+          path: dist/CAPITAL-Android-Release.zip
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: error
+      - name: Publish the downloadable release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view v1.0.0-test >/dev/null 2>&1; then
+            gh release create v1.0.0-test --target main --prerelease \
+              --title 'CAPITAL 1.0 · Android · тестовая сборка' \
+              --notes-file docs/RELEASE-NOTES.md
+          fi
+          gh release upload v1.0.0-test dist/CAPITAL-Android-Release.zip --clobber
