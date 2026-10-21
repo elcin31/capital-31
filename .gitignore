@@ -1,0 +1,9 @@
+.godot/
+game/.godot/
+.toolchain/
+*.keystore
+*.jks
+*.tmp
+dist/*
+!dist/.gitkeep
+__pycache__/
