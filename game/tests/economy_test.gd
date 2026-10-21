@@ -176,6 +176,13 @@ func run() -> void:
  game.finance_action("loan",2000000,false)
  check(absf(game.company().loan.rate-(old_rate+0.05))<0.000001,"Новый фиксированный кредит учитывается средневзвешенной ставкой")
  check(not game.finance_action("restructure").is_empty(),"Нельзя бесконечно списывать долг платёжеспособной компании")
+ fresh()
+ var cash_available=int(game.ledger().accounts.cash)
+ var private_before=int(game.state.founder.personal)
+ game.finance_action("salary",300000000)
+ Economy.company_day(game.state,game.company(),1)
+ check(game.state.founder.personal-private_before==cash_available,"Зарплата основателя ограничена реальными деньгами компании")
+ check(game.ledger().accounts.cash==0 and game.ledger().balance_error()==0,"Зарплата не создаёт личные деньги из кассового разрыва")
  var result={"checks":checks,"failed":failures.size(),"failures":failures,"industry_evidence":evidence,"godot":Engine.get_version_info().string}
  var out=FileAccess.open("res://../docs/QA-ECONOMY.json",FileAccess.WRITE);out.store_string(JSON.stringify(result,"  "));out.close()
  print("RESULT: ",checks," checks, ",failures.size()," failed")

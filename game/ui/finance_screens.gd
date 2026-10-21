@@ -75,7 +75,7 @@ func capital_page(col: VBoxContainer) -> void:
  UI.button(buttons,"Выплатить дивиденды",func():ui.global_screens.confirm("Выплатить дивиденды всем владельцам пропорционально их долям?",func():execute("dividend")))
  UI.button(col,"Установить зарплату основателя / месяц",func():execute("salary"))
  UI.button(col,"Продать личную долю · дисконт 10%",func():ui.global_screens.confirm("Продать часть личной доли частному покупателю? Деньги получит основатель; счёт компании не изменится.",func():execute("sell_stake")))
- UI.text(col,"Ввод 0 отключает зарплату. Дивиденды доступны только из накопленной прибыли. Инвестиция основателя выпускает новые доли и размывает остальных владельцев.",14)
+ UI.text(col,"Ввод 0 отключает зарплату. Основатель получает зарплату только из доступных денег. Дивиденды — из накопленной прибыли. Личный взнос выпускает новые доли.",14)
  UI.separator(col);UI.label(col,"ВЛАДЕНИЕ · CAP TABLE",15,UI.BLUE,true)
  for owner in c.cap_table:UI.pair(col,owner.name,"%.3f%%"%(owner.share*100))
  UI.label(col,"ИНВЕСТИЦИОННЫЕ РАУНДЫ",14,UI.BLUE,true)

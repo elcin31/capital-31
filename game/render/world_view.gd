@@ -198,3 +198,8 @@ func draw_actors(c: CanvasItem) -> void:
     c.draw_circle(pos-Vector2(0,39),3,Art.GREEN if e.efficiency>0 else Color("ffaa32"))
   if not tool.is_empty() and ghost.x>=0 and ghost.x<16 and ghost.y>=0 and ghost.y<12:
    Art.tile(c,ghost.x,ghost.y,Color(0.05,0.8,0.9,0.40),4 if tool=="room" else 1,4 if tool=="room" else 1,2)
+  var founder_position=Art.iso(1.0,5.5)
+  for room in company.office.rooms:
+   if int(room.floor)==floor_id and Catalog.ROOM_DEFS[int(room.type)].kind=="ceo":founder_position=Art.iso(room.x,room.y+1)
+  Art.person(c,founder_position,1.2,Game.state.founder.appearance,0.0)
+  c.draw_string(font,founder_position-Vector2(20,39),"CEO",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Art.BLUE)

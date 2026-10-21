@@ -83,7 +83,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
  if c.office.rented:
   l.expense(day,"Аренда и эксплуатация",int(city.rent*inflation*int(c.office.floors)/30.0*(0.2 if c.office.get("owned",false) else 1.0)),"rent",true)
  if int(c.get("founder_salary",0))>0:
-  var salary=int(c.founder_salary)/30
+  var salary=mini(int(c.founder_salary)/30,maxi(0,int(l.accounts.cash)))
   l.expense(day,"Зарплата основателя",salary,"wages")
   state.founder.personal+=salary
  if c.marketing>0: l.expense(day,"Маркетинг",int(c.marketing),"marketing")

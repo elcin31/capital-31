@@ -57,6 +57,7 @@ static func text(parent: Node, value: String, size_value: int = 16, color: Color
 
 static func button(parent: Node, title: String, callback: Callable, primary: bool = false) -> Button:
  var b=Button.new();b.text=title;b.custom_minimum_size.y=44;b.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
+ b.size_flags_vertical=Control.SIZE_SHRINK_CENTER
  if primary:
   b.add_theme_stylebox_override("normal",style(BLUE,10));b.add_theme_stylebox_override("hover",style(Color("37a4ff"),10));b.add_theme_color_override("font_color",Color.WHITE);b.add_theme_color_override("font_hover_color",Color.WHITE)
  parent.add_child(b)
