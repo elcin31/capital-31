@@ -1,0 +1,7 @@
+{
+  "apk_test": false,
+  "checks": 49,
+  "failed": 0,
+  "failures": [],
+  "platform": "Godot desktop, Xvfb, software OpenGL; pointer clicks + touch gesture events"
+}

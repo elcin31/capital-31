@@ -70,10 +70,15 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
  var l=Ledger.new(c.ledger)
  var inflation=pow(1.0+float(city.inflation),float(day)/365.0)
  var wage_total: int=0
- for e in c.employees:
+ for e in c.employees.duplicate():
   wage_total+=int(e.wage)
   e.satisfaction=clampf(e.satisfaction+(0.08 if e.wage>=city.wage*world.wages else -0.18)+(0.1 if OfficeSim.has_room(c,"break") else 0),0,100)
   if e.satisfaction<15: e.status="Ищет другую работу"
+  e.satisfaction=minf(100,e.satisfaction+minf(0.3,OfficeSim.bonus(c,["plant"])*0.025)+(0.08 if OfficeSim.has_room(c,"hr") else 0)+(0.08 if OfficeSim.has_room(c,"kitchen") else 0))
+  e.motivation=clampf(float(e.get("motivation",80))*0.98+e.satisfaction*0.02,0,100)
+  if e.satisfaction<10 and (day+int(e.id))%7==0:
+   c.employees.erase(e)
+   notify(state,"Сотрудник уволился",e.name+": длительная неудовлетворённость условиями.","warning")
  l.expense(day,"Зарплаты: начисление",wage_total,"wages",true)
  if c.office.rented:
   l.expense(day,"Аренда и эксплуатация",int(city.rent*inflation*int(c.office.floors)/30.0*(0.2 if c.office.get("owned",false) else 1.0)),"rent",true)
@@ -98,7 +103,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
  for p in c.products:
   if not p.stage in ["Поддержка","Рост","Спад"]: continue
   p.age+=1
-  p.awareness=clampf(p.awareness+float(c.marketing)/12000.0-0.1,5,100)
+  p.awareness=clampf(p.awareness+float(c.marketing)/12000.0-0.1+(0.12 if OfficeSim.has_room(c,"marketing") else 0),5,100)
   p.satisfaction=clampf(p.quality*0.7+p.fit*0.3-(p.price/100.0-49)*0.1,5,100)
   p.stage="Спад" if p.age>240 else ("Рост" if p.customers>100 else "Поддержка")
   var demand=float(world.demand)*float(city.demand[int(c.industry)])*float(city.market)
@@ -114,7 +119,7 @@ static func company_day(state: Dictionary, c: Dictionary, day: int) -> void:
    p.customers=maxi(0,int(p.customers)+potential-churn)
    sold=potential
    revenue=int(p.customers*p.price/30.0)
-   l.expense(day,"Хостинг и поддержка: "+p.name,int(revenue*0.08)+150,"maintenance")
+   l.expense(day,"Хостинг и поддержка: "+p.name,int(revenue*0.08/(1+OfficeSim.bonus(c,["server"])*0.15))+150,"maintenance")
   elif c.industry==1:
    var capacity=int(OfficeSim.bonus(c,["shelf"]))*100
    var space=capacity

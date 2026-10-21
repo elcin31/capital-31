@@ -1,0 +1,8 @@
+CAPITAL original assets
+Five original city illustrations created for this project using OpenAI image
+generation on 2026-10-21, guided by the user's approved CAPITAL concept.
+No images were scraped from unrelated projects or random Internet sources.
+City names describe stylized, fictional game scenes, not surveyed geography.
+Modular portraits, isometric furniture, buildings and world map are original
+procedural drawings authored in this repository. All seven audio cues are original
+synthesized PCM sounds. Font licensing is in assets/fonts/LICENSE.txt.

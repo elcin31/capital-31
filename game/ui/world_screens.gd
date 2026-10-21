@@ -69,11 +69,13 @@ func show_world() -> void:
  UI.button(row,"Открыть филиал · €40 000",func():ui.perform(func():return Game.open_branch(branch_city),show_world,"level"),true)
  var cash: int=0;var rev: int=0;var profit: int=0;var debt: int=0
  for c in Game.state.companies:
-  if c.status=="Ликвидирована":continue
   var l=Ledger.new(c.ledger);var r=l.report(maxi(0,Game.day()-29))
   cash+=int(l.accounts.cash);rev+=int(r.revenue);profit+=int(r.net);debt+=int(l.accounts.debt)
   for entry in l.journal:
    if entry.memo=="Внутригрупповые дивиденды" and int(entry.day)>=maxi(0,Game.day()-29):rev-=int(entry.cash);profit-=int(entry.cash)
+   if entry.memo=="Возврат капитала филиала" and int(entry.day)>=maxi(0,Game.day()-29):
+    rev-=int(entry.pl.get("revenue",0))
+    profit-=int(entry.pl.get("revenue",0))-int(entry.pl.get("maintenance",0))
  var summary=UI.row(col)
  UI.metric(summary,"ДЕНЬГИ ГРУППЫ",Catalog.money(cash),UI.BLUE)
  UI.metric(summary,"ВЫРУЧКА / 30 ДН.",Catalog.money(rev))

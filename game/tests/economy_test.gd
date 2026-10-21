@@ -50,6 +50,7 @@ func run() -> void:
   hours(24*30)
   var fin=game.ledger()
   check(p.customers>0 and p.revenue>0,"Реальные клиенты и выручка · %d"%industry)
+  check(int(fin.accounts.inventory)==int(p.get("inventory_value",0)),"Стоимость запасов совпадает с количеством и закупками · %d"%industry)
   check(fin.balance_error()==0,"Баланс после 90 дней · %d"%industry)
   check(fin.accounts.cash==fin.report().change,"Все деньги объясняются Cash Flow · %d"%industry)
   check(fin.report().wages>0 and fin.report().rent>0,"Начислены зарплата и аренда · %d"%industry)
@@ -135,6 +136,45 @@ func run() -> void:
  check(game.ledger().balance_error()==0,"Баланс после ликвидации")
  check(game.register_company(3,"Новый старт",1,4000000,0).is_empty(),"Новая компания тем же основателем")
  check(game.state.founder.first==person.first and game.state.founder.skills[3]==person.skills[3] and game.state.companies.size()==2,"Карьера и навыки переживают банкротство")
+ fresh()
+ var prior_cash=game.ledger().accounts.cash
+ var prior_personal=game.state.founder.personal
+ check(game.finance_action("sell_stake",500000).is_empty(),"Продажа личной доли")
+ check(game.ledger().accounts.cash==prior_cash and game.state.founder.personal==prior_personal+500000,"Вторичная сделка не смешивает личные и корпоративные деньги")
+ sum=0
+ for owner in game.company().cap_table:sum+=float(owner.share)
+ check(absf(sum-1.0)<0.000001,"Cap table после продажи личной доли")
+ fresh()
+ prior_cash=game.ledger().accounts.cash
+ game.open_branch(1)
+ check(not game.finance_action("liquidate").is_empty(),"Активы дочерней компании защищены при ликвидации родителя")
+ game.state.current=1
+ check(game.finance_action("liquidate").is_empty(),"Ликвидация филиала")
+ game.state.current=0
+ check(game.ledger().accounts.cash==prior_cash and game.ledger().accounts.investments==0,"Капитал филиала вернулся владельцу без потери денег")
+ fresh()
+ game.open_branch(1);game.state.current=1
+ check(game.finance_action("invest",1000000).is_empty(),"Личная инвестиция в филиал")
+ sum=0
+ for owner in game.company().cap_table:sum+=float(owner.share)
+ check(absf(sum-1.0)<0.000001 and game.company().cap_table.size()==2,"В филиале корректно выпускаются доли основателю")
+ fresh()
+ game.finance_action("loan",10000000)
+ var net_before=game.ledger().accounts.cash-game.ledger().accounts.debt
+ check(game.acquire_rival(1).is_empty(),"Приобретение действующей розничной компании")
+ var child=game.state.companies[1]
+ check(child.employees.size()>0 and child.products.size()>0 and child.products[0].quality==game.state.world.competitors[1].quality,"Приобретение сохраняет команду и характеристики продукта")
+ var parent_fin=game.ledger();var child_fin=Ledger.new(child.ledger)
+ check(parent_fin.accounts.cash+child_fin.accounts.cash-parent_fin.accounts.debt-child_fin.accounts.debt==net_before,"Сделка переносит и деньги, и долг конкурента")
+ check(child_fin.balance_error()==0 and parent_fin.balance_error()==0,"Баланс обеих компаний после приобретения")
+ fresh()
+ game.finance_action("loan",2000000,false)
+ var old_rate=float(game.company().loan.rate)
+ game.state.world.rate=0.10
+ check(float(game.company().loan.rate)==old_rate,"Рост рыночной ставки не меняет старый фиксированный кредит")
+ game.finance_action("loan",2000000,false)
+ check(absf(game.company().loan.rate-(old_rate+0.05))<0.000001,"Новый фиксированный кредит учитывается средневзвешенной ставкой")
+ check(not game.finance_action("restructure").is_empty(),"Нельзя бесконечно списывать долг платёжеспособной компании")
  var result={"checks":checks,"failed":failures.size(),"failures":failures,"industry_evidence":evidence,"godot":Engine.get_version_info().string}
  var out=FileAccess.open("res://../docs/QA-ECONOMY.json",FileAccess.WRITE);out.store_string(JSON.stringify(result,"  "));out.close()
  print("RESULT: ",checks," checks, ",failures.size()," failed")

@@ -23,6 +23,7 @@ var camera_buttons: HBoxContainer
 var floor_buttons: HBoxContainer
 var news_line: Button
 var analytics_button: Button
+var last_notice: String=""
 
 func _ready() -> void:
  theme=UI.theme()
@@ -202,6 +203,14 @@ func refresh_values() -> void:
   if is_instance_valid(node) and not node.is_queued_for_deletion():node.set(b.property,b.fn.call());valid.append(b)
  bindings=valid
  if is_instance_valid(chart):chart.queue_redraw()
+ if not Game.state.news.is_empty():
+  var news=Game.state.news[0]
+  var key=str(news.day)+news.title
+  if key!=last_notice:
+   last_notice=key
+   if news.kind in ["success","warning"]:
+    audio.play_cue("warning" if news.kind=="warning" else ("product" if "Продукт" in news.title else "level"))
+    show_toast(news.title,news.kind)
 
 func perform(fn: Callable, after: Callable = Callable(), cue: String = "click") -> void:
  var result=fn.call()

@@ -196,7 +196,7 @@ func hire(candidate: Dictionary) -> String:
  var e=candidate.duplicate(true)
  e.id=company().next_employee
  company().next_employee+=1
- e.task=-1; e.fatigue=0.0; e.satisfaction=80.0; e.efficiency=0.0; e.experience=0.0; e.status="Идёт в офис"; e.x=0; e.y=6; e.floor=0; e.route=[]; e.start=8; e.end=18
+ e.task=-1; e.fatigue=0.0; e.satisfaction=85.0 if OfficeSim.has_room(company(),"reception") else 80.0; e.motivation=80.0; e.efficiency=0.0; e.experience=0.0; e.status="Идёт в офис"; e.x=0; e.y=6; e.floor=0; e.route=[]; e.start=8; e.end=18
  company().employees.append(e)
  state.founder.skills[0]=minf(100,state.founder.skills[0]+0.1)
  updated.emit(); office_changed.emit()
@@ -224,7 +224,7 @@ func employee_action(index: int, action: String, value: int = -1) -> String:
  elif action=="raise": e.wage=int(e.wage*1.10); e.satisfaction=minf(100,e.satisfaction+12)
  elif action=="train":
   if l.accounts.cash<50000: return "Обучение стоит €500"
-  l.expense(day(),"Обучение: "+e.name,50000,"research"); e.skill=minf(100,e.skill+5)
+  l.expense(day(),"Обучение: "+e.name,50000,"research"); e.skill=minf(100,e.skill+(8 if OfficeSim.has_room(c,"hr") else 5))
  elif action=="promote": e.wage=int(e.wage*1.15); e.skill=minf(100,e.skill+3); e.satisfaction=minf(100,e.satisfaction+8)
  elif action=="task": e.task=value
  elif action=="role": e.role=value
@@ -290,7 +290,10 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
    if amount<=0 or l.accounts.debt+amount>limit: return "Превышен кредитный лимит"
    if state.world.event==9 and amount>l.accounts.capital/2: return "Кредитное сжатие: лимит снижен"
    if l.accounts.debt>0 and bool(c.loan.floating)!=floating: return "Сначала погасите текущий кредит для смены ставки"
-   c.loan={"rate":Catalog.CITIES[int(c.city)].rate+(0.015+state.world.rate if not floating else 0.0),"floating":floating}
+   var planning=0.005 if OfficeSim.has_room(c,"finance") else 0.0
+   var new_rate=Catalog.CITIES[int(c.city)].rate+(0.015+state.world.rate if not floating else 0.0)-planning
+   var blended=(float(l.accounts.debt)*float(c.loan.rate)+amount*new_rate)/maxi(1,int(l.accounts.debt)+amount)
+   c.loan={"rate":blended,"floating":floating}
    l.post(day(),"Банковский кредит",{"cash":amount,"debt":amount},"financing")
   "repay":
    amount=mini(amount,int(l.accounts.debt))
@@ -301,8 +304,10 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
    var value=Negotiation.valuation(c)
    var issued=float(amount)/(value+amount)
    for owner in c.cap_table: owner.share*=1-issued
+   var found=false
    for owner in c.cap_table:
-    if owner.id=="founder": owner.share+=issued
+    if owner.id=="founder": owner.share+=issued;found=true
+   if not found:c.cap_table.append({"id":"founder","name":state.founder.first+" "+state.founder.last,"share":issued})
    state.founder.personal-=amount
    l.post(day(),"Вклад основателя",{"cash":amount,"capital":amount},"financing")
   "dividend":
@@ -341,13 +346,18 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
    l.post(day(),"Покупка офиса",{"cash":-price,"equipment":price},"investing")
    c.office.rented=true; c.office.owned=true; c.daily_depreciation+=price/7200
   "restructure":
+   if c.insolvent_days<=0:return "Реструктуризация доступна при кассовом разрыве"
+   if day()-int(c.get("last_restructure",-999))<90:return "Повторная реструктуризация возможна через 90 дней"
    var pay=mini(maxi(0,int(l.accounts.cash))/2,int(l.accounts.debt)/4)
    var forgiven=int(l.accounts.debt)/10
    if forgiven<=0: return "Нет банковского долга для реструктуризации"
    l.post(day(),"Реструктуризация долга",{"cash":-pay,"debt":-pay-forgiven,"earnings":forgiven},"financing",{"revenue":forgiven})
    c.loan.rate+=0.025
+   c.last_restructure=day()
    state.founder.skills[6]=maxf(0,state.founder.skills[6]-3)
   "liquidate":
+   for subsidiary in state.companies:
+    if int(subsidiary.parent)==int(c.id) and subsidiary.status!="Ликвидирована":return "Сначала ликвидируйте дочерние компании: их активы нужны кредиторам группы"
    var recovered=int((l.accounts.equipment+l.accounts.depreciation)*0.45+l.accounts.inventory*0.6+l.accounts.ar*0.8+l.accounts.deposit)
    var changes={"cash":recovered,"equipment":-int(l.accounts.equipment),"depreciation":-int(l.accounts.depreciation),"inventory":-int(l.accounts.inventory),"ar":-int(l.accounts.ar),"deposit":-int(l.accounts.deposit)}
    var assets=0
@@ -362,6 +372,15 @@ func finance_action(action: String, amount: int = 0, floating: bool = true) -> S
    if remainder>0:
     for owner in c.cap_table:
      if owner.id=="founder": state.founder.personal+=int(remainder*owner.share)
+     elif str(owner.id).begins_with("company_"):
+      var parent=state.companies[int(str(owner.id).trim_prefix("company_"))]
+      var parent_ledger=Ledger.new(parent.ledger)
+      var portion=int(remainder*owner.share)
+      var book=mini(int(parent_ledger.accounts.investments),int(c.get("parent_investment",4000000)))
+      var gain=portion-book
+      var profit={"revenue":gain} if gain>=0 else {"maintenance":-gain}
+      parent_ledger.post(day(),"Возврат капитала филиала",{"cash":portion,"investments":-book,"earnings":gain},"investing",profit)
+      parent.ledger=parent_ledger.export_data()
     l.post(day(),"Возврат остатка владельцам",{"cash":-remainder,"capital":-remainder},"financing")
    c.status="Ликвидирована"; c.employees=[]; c.receivables=[]
    state.founder.career.append({"day":day(),"text":"Ликвидирована "+c.name})
@@ -379,6 +398,7 @@ func open_branch(city_id: int) -> String:
  l.post(day(),"Капитал филиала",{"cash":-amount,"investments":amount},"investing")
  c.ledger=l.export_data()
  var child=make_company(city_id,c.name+" · "+Catalog.CITIES[city_id].en,int(c.industry),amount,int(c.model),int(c.id))
+ child.parent_investment=amount
  child.cap_table=[{"id":"company_%d"%int(c.id),"name":c.name,"share":1.0}]
  state.companies.append(child)
  Economy.notify(state,"Международное развитие","Филиал зарегистрирован. Выберите его и настройте местный офис.","success")
@@ -400,18 +420,37 @@ func acquire_rival(rival_id: int) -> String:
  l.post(day(),"Покупка: "+rival.name,{"cash":-price,"investments":price},"investing")
  c.ledger=l.export_data()
  var child=make_company(int(rival.city),rival.name,int(rival.industry),maxi(1000000,int(rival.cash)),0,int(c.id))
+ child.parent_investment=price
  child.cap_table=[{"id":"company_%d"%int(c.id),"name":c.name,"share":1.0}]
  child.office.rented=true
  var room_type=[11,15,19][int(child.industry)]
  OfficeSim.add_room(child,room_type,1,1,0)
- var equipment=[0,7,8][int(child.industry)]
- OfficeSim.add_furniture(child,equipment,2,2,0)
+ OfficeSim.add_room(child,0,6,1,0)
+ for offset in [[2,2],[3,3],[2,3],[3,2]]:
+  if child.industry==2:continue
+  OfficeSim.add_furniture(child,0 if child.industry==0 else 7,offset[0],offset[1],0)
+ if child.industry==2:
+  for y in range(1,5):OfficeSim.add_furniture(child,8,2,y,0)
+ for offset in [[7,2],[8,3],[7,3],[8,2]]:OfficeSim.add_furniture(child,0,offset[0],offset[1],0)
  if child.industry!=0:
-  OfficeSim.add_room(child,16 if child.industry==1 else 22,7,1,0)
-  OfficeSim.add_furniture(child,6,8,2,0)
+  OfficeSim.add_room(child,16 if child.industry==1 else 22,11,1,0)
+  OfficeSim.add_furniture(child,6,12,2,0)
+ var inherited=Ledger.new(child.ledger)
+ var assets=0
+ for room in child.office.rooms:assets+=int(Catalog.ROOM_DEFS[int(room.type)].cost)
+ for f in child.office.furniture:assets+=int(Catalog.FURNITURE[int(f.type)].cost)
+ inherited.post(day(),"Принятые активы при приобретении",{"equipment":assets,"capital":assets},"investing")
+ inherited.post(day(),"Принятые обязательства при приобретении",{"debt":int(rival.debt),"capital":-int(rival.debt)},"financing")
+ child.daily_depreciation=assets/1080
+ child.ledger=inherited.export_data()
+ for i in range(mini(8,int(rival.staff))):
+  child.employees.append({"id":i,"name":Catalog.FIRST_NAMES[(i*3+rival_id)%24]+" "+Catalog.LAST_NAMES[i%12],"role":[0,4,6][int(child.industry)],"wage":int(Catalog.CITIES[int(child.city)].wage*1.2),"skill":float(rival.quality),"appearance":Catalog.appearance(i*3+rival_id),"task":-1,"fatigue":0.0,"satisfaction":75.0,"motivation":75.0,"efficiency":0.0,"experience":float(rival.age)/10.0,"status":"Идёт в офис","x":0,"y":6,"floor":0,"route":[],"start":8,"end":18})
+ child.next_employee=child.employees.size()
+ child.products.append({"id":0,"name":rival.name+" One","kind":0,"audience":1,"price":int(rival.price),"quality":float(rival.quality),"innovation":50.0,"fit":70.0,"awareness":float(rival.awareness),"satisfaction":float(rival.quality),"stage":"Рост","progress":175.0,"required":175.0,"customers":100,"revenue":0,"daily_revenue":0,"sales":0,"stock":0,"materials":0,"unit_cost":0,"inventory_value":0,"auto_supply":true,"age":90})
+ child.next_product=1
  state.companies.append(child)
  rival.active=false; rival.status="Приобретена"; rival.share=0
- Economy.notify(state,"Приобретение завершено",child.name+" вошла в вашу группу. Настройте её команду и продукт.","success")
+ Economy.notify(state,"Приобретение завершено",child.name+" вошла в вашу группу вместе с продуктом, командой, активами и долгом.","success")
  updated.emit()
  return ""
 

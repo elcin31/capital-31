@@ -42,7 +42,9 @@ func show_negotiation() -> void:
  if n.is_empty():show_investors();return
  var inv=Catalog.INVESTORS[int(n.investor)]
  var col=ui.open_panel("Переговорная · "+inv.firm,1100)
- var stage=UI.card(col,Color("e9f6ff"));var people=UI.row(stage)
+ var stage=UI.card(col,Color("e9f6ff"))
+ var room=MeetingBackdrop.new();stage.get_parent().add_child(room);stage.get_parent().move_child(room,0)
+ var people=UI.row(stage)
  var founder=UI.column(people);UI.portrait(founder,Game.state.founder.appearance,Vector2(230,230));UI.label(founder,Game.state.founder.first+" "+Game.state.founder.last,18,UI.TEXT,true)
  var offer=UI.column(people)
  UI.label(offer,"ИНВЕСТИЦИОННОЕ ПРЕДЛОЖЕНИЕ",13,UI.BLUE,true)

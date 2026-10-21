@@ -64,11 +64,14 @@ func show_founder() -> void:
   UI.option(box,field[1],field[2],int(founder.appearance[field[0]]),func(n):founder.appearance[field[0]]=n;portrait.queue_redraw())
  UI.option(form,"Профессиональная биография",Catalog.BIOS,int(founder.bio),func(n):founder.bio=n)
  UI.label(col,"24 НАЧАЛЬНЫХ ОБРАЗА · каждый можно изменить",13,UI.BLUE,true)
- var presets=GridContainer.new();presets.columns=12;col.add_child(presets)
+ var slider=ScrollContainer.new();slider.custom_minimum_size.y=126;slider.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;col.add_child(slider)
+ var presets=UI.row(slider)
  for i in range(24):
-  var button=UI.button(presets,"%02d"%(i+1),func():founder.appearance=Catalog.appearance(i);show_founder())
-  button.custom_minimum_size.x=64
- UI.button(col,"Далее: страна и город  →",show_city,true)
+  var button=UI.button(presets,"",func():founder.appearance=Catalog.appearance(i);show_founder())
+  button.custom_minimum_size=Vector2(88,110)
+  var thumbnail=UI.portrait(button,Catalog.appearance(i),Vector2(78,82));thumbnail.position=Vector2(5,0);thumbnail.size=Vector2(78,82)
+  UI.label(button,"%02d"%(i+1),12,UI.BLUE,true).position=Vector2(34,86)
+ UI.button(ui.modal_panel.get_child(0),"Далее: страна и город  →",show_city,true)
 
 func show_city() -> void:
  var col=ui.open_panel("02 / Где начнётся ваша история?",1120)
@@ -90,7 +93,7 @@ func show_city() -> void:
  UI.pair(info,"Таланты / конкуренция","%.2f / %.2f"%[city.talent,city.competition])
  UI.pair(info,"Налог / кредит","%.0f%% / %.1f%%"%[city.tax*100,city.rate*100])
  UI.text(col,["Берлин: сбалансированный рынок и сильные специалисты. Налоги требуют дисциплины.","Сан-Франциско: большой IT-рынок и венчурный капитал, высокая стоимость команды.","Дубай: торговля, инфраструктура и низкий налог. Меньше локальных клиентов.","Бангалор: доступные инженеры и большой рынок, ниже выручка на клиента.","Москва: сильные инженеры и промышленный спрос, дорогие кредиты."][city_id],17,UI.TEXT)
- var r=UI.row(col)
+ var r=UI.row(ui.modal_panel.get_child(0))
  UI.button(r,"← Персонаж",show_founder)
  UI.button(r,"Далее: регистрация компании  →",show_company,true)
 
@@ -104,7 +107,7 @@ func show_company() -> void:
  UI.option(col,"Вклад из личных средств",["€40 000 · осторожный старт","€80 000 · сбалансированный старт","€140 000 · быстрый рост"],capital_index,func(n):capital_index=n)
  UI.pair(col,"Штаб-квартира",Catalog.CITIES[city_id].name)
  UI.text(col,["IT: разработка → тестирование → запуск → подписки и поддержка. Нужны разработчики и компьютеры.","Розница: торговый зал и касса → закупка товаров → склад → продажи. Следите за запасами.","Производство: цех и линия → закупка сырья → сборка → контроль качества → отгрузка."][industry],17,UI.TEXT)
- var r=UI.row(col)
+ var r=UI.row(ui.modal_panel.get_child(0))
  UI.button(r,"← Выбрать город",show_city)
  UI.button(r,"Зарегистрировать компанию  →",finish,true)
 
@@ -126,8 +129,12 @@ func save_frame(name: String) -> void:
 
 func capture_all() -> void:
  await save_frame("01-menu");show_founder();await save_frame("02-founder");show_city();await save_frame("03-city-selection");show_company();await save_frame("04-company")
- finish();Game.rent_office();Game.build_room(11,1,1,0);Game.buy_furniture(0,2,2,0);Game.buy_furniture(1,3,3,0)
- Game.hire(Game.candidates()[0]);Game.hire(Game.candidates()[1]);Game.start_product("Nexa AI",4900,75,1,250000,4)
+ capital_index=2
+ finish();Game.rent_office()
+ for room in [[11,1,1],[2,6,1],[14,11,1],[3,1,6],[12,6,6],[6,11,6]]:Game.build_room(room[0],room[1],room[2],0)
+ for item in [[0,2,2],[1,3,3],[0,2,3],[0,3,2],[1,12,2],[9,13,3],[2,7,2],[10,9,4],[3,2,7],[4,4,8],[10,2,9],[5,7,7],[5,8,8],[0,12,7],[11,13,8],[10,14,9]]:Game.buy_furniture(item[0],item[1],item[2],0)
+ for i in range(6):Game.hire(Game.candidates()[i])
+ Game.start_product("Nexa AI",4900,75,1,250000,4)
  for i in range(24*38):Economy.hour(Game.state)
  Game.product_action(0,"launch")
  for i in range(24*18):Economy.hour(Game.state)
